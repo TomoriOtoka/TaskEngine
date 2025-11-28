@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 
 namespace WPFMaster
 {
@@ -8,7 +9,24 @@ namespace WPFMaster
         {
             base.OnStartup(e);
 
-            new MainWindow().Show();
+            string machine = Environment.MachineName.ToUpper();
+
+            // DEBUG
+            Console.WriteLine("MachineName: " + machine);
+            Console.WriteLine("¿Es master? " + Array.Exists(MasterList.Masters, m => m.ToUpper() == machine));
+                
+            // Si es master → abrir ventana MASTER
+            if (Array.Exists(MasterList.Masters, m => m.ToUpper() == machine))
+            {
+                MainWindow master = new MainWindow();
+                master.Show();
+
+                return;
+            }
+
+            // Si NO es master, abrir cliente
+            ClientWindow client = new ClientWindow();
+            client.Show();
         }
     }
 }

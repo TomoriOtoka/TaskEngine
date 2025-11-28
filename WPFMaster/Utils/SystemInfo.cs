@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using System.Management;
 
 namespace WPFMaster.Utils
 {
     public static class SystemInfo
     {
-        public static string MachineName => Environment.MachineName;
-
         public static float GetCpuUsage()
         {
             PerformanceCounter cpu = new PerformanceCounter("Processor", "% Processor Time", "_Total");
             cpu.NextValue();
-            Thread.Sleep(500);
+            System.Threading.Thread.Sleep(500);
             return cpu.NextValue();
         }
 
@@ -22,11 +19,12 @@ namespace WPFMaster.Utils
             float total = 0;
             float free = 0;
 
-            var searcher = new ManagementObjectSearcher("SELECT TotalVisibleMemorySize, FreePhysicalMemory FROM Win32_OperatingSystem");
-            foreach (ManagementObject obj in searcher.Get())
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT TotalVisibleMemorySize, FreePhysicalMemory FROM Win32_OperatingSystem");
+
+            foreach (var o in searcher.Get())
             {
-                total = Convert.ToSingle(obj["TotalVisibleMemorySize"]) / 1024; // MB
-                free = Convert.ToSingle(obj["FreePhysicalMemory"]) / 1024;     // MB
+                total = Convert.ToSingle(o["TotalVisibleMemorySize"]) / 1024;
+                free = Convert.ToSingle(o["FreePhysicalMemory"]) / 1024;
             }
 
             float used = total - free;

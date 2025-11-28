@@ -32,3 +32,7 @@ C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\System.CodeDom.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\System.Management.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\runtimes\win\lib\net8.0\System.Management.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\WPFMaster.sourcelink.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ClientWindow.baml
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ClientWindow.g.cs
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\App.baml
