@@ -7,32 +7,44 @@ namespace WPFMaster.Services
 {
     public class ClientService
     {
-        private readonly FirebaseService firebase;
-        private readonly string pcName;
+        private readonly FirebaseService _firebase;
+        private readonly string _pcName;
 
         public ClientService()
         {
-            firebase = new FirebaseService();
-            pcName = Environment.MachineName;
+            _firebase = new FirebaseService();
+            _pcName = Environment.MachineName;
         }
 
-        public async Task SendStatusAsync()
+        public async Task SendSnapshotAsync()
         {
-            float cpu = SystemInfo.GetCpuUsage();
-            var ram = SystemInfo.GetRamInfo();
-
-            PCInfo info = new PCInfo
+            try
             {
-                PCName = pcName,
-                CpuUsage = cpu,
-                TotalRam = ram.total,
-                UsedRam = ram.used,
-                FreeRam = ram.free,
-                LastUpdate = DateTime.Now.ToString("HH:mm:ss")
-            };
+                float cpu = SystemInfo.GetCpuUsagePercent();
+                float temp = SystemInfo.GetCpuTemperature();
+                var ram = SystemInfo.GetRamInfo();
+                float disk = SystemInfo.GetDiskUsagePercent("C");
 
-            await firebase.UpdateMachineAsync(pcName, info);
+                PCInfo info = new PCInfo
+                {
+                    PCName = _pcName,
+                    CpuUsage = cpu,
+                    CpuTemperature = temp,
+                    RamUsagePercent = ram.percentUsed,
+                    TotalRamMB = ram.totalMB,
+                    UsedRamMB = ram.usedMB,
+                    DiskUsagePercent = disk,
+                    IsOnline = true,
+                    LastUpdate = DateTime.UtcNow.ToString("o")
+                };
+
+                // 🔥 Este sí sobreescribe LastUpdate correctamente
+                await _firebase.SetMachineAsync(_pcName, info);
+            }
+            catch
+            {
+                // silencioso
+            }
         }
     }
 }
-    

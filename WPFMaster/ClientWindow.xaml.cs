@@ -1,43 +1,34 @@
 ﻿using System;
-using System.Timers;
 using System.Windows;
 using WPFMaster.Services;
 
+// NO AGREGAR using System.Timers;
 namespace WPFMaster
 {
     public partial class ClientWindow : Window
     {
-        private readonly ClientService clientService;
-        private readonly System.Timers.Timer refreshTimer;
+        private readonly ClientService _clientService;
+        private readonly System.Timers.Timer _timer;   // ← solución
 
         public ClientWindow()
         {
             InitializeComponent();
 
-            clientService = new ClientService();
+            _clientService = new ClientService();
 
-            refreshTimer = new System.Timers.Timer(3000);
-            refreshTimer.Elapsed += RefreshTimer_Elapsed;
-            refreshTimer.AutoReset = true;
-            refreshTimer.Start();
+            _timer = new System.Timers.Timer(3000);     // ← usar namespace completo
+            _timer.Elapsed += async (s, e) => await _clientService.SendSnapshotAsync();
+            _timer.AutoReset = true;
+            _timer.Start();
 
-            InfoBlock.Text = "CLIENTE: " + Environment.MachineName;
-        }
-
-        private async void RefreshTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            await clientService.SendStatusAsync();
-
-            Dispatcher.Invoke(() =>
-            {
-                StatusBlock.Text = $"Último envío: {DateTime.Now:HH:mm:ss}";
-            });
+            InfoBlock.Text = $"CLIENTE: {Environment.MachineName}";
+            StatusBlock.Text = "Enviando datos...";
         }
 
         protected override void OnClosed(EventArgs e)
         {
-            refreshTimer?.Stop();
-            refreshTimer?.Dispose();
+            _timer?.Stop();
+            _timer?.Dispose();
             base.OnClosed(e);
         }
     }

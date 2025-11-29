@@ -1,21 +1,74 @@
 ﻿<Window x:Class="WPFMaster.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Master" Height="450" Width="800">
+        Title="WPF Master"
+        Height="600" Width="950"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="SingleBorderWindow">
 
-    <Grid Margin="10">
-        <StackPanel>
-            <TextBlock x:Name="TitleBlock"
-                       FontSize="20" 
-                       FontWeight="Bold"
-                       Margin="0 0 0 10"/>
 
-            <DataGrid x:Name="MachinesGrid" 
-                      AutoGenerateColumns="True" 
-                      Height="300" Margin="0 0 0 10"/>
+    <Window.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#DCEFFE" Offset="0"/>
+            <GradientStop Color="#BEFCFF" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Background>
 
-            <TextBlock x:Name="StatusBlock"
-                       FontSize="14"/>
-        </StackPanel>
-    </Grid>
+    <DockPanel LastChildFill="True" Margin="10">
+
+        <!-- Bloque de título -->
+        <TextBlock x:Name="TitleBlock"
+                   DockPanel.Dock="Top"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Margin="0,0,0,8"
+                   Foreground="Black"/>
+
+        <!-- Bloque de estado/última actualización -->
+        <TextBlock x:Name="StatusBlock"
+                   DockPanel.Dock="Top"
+                   FontSize="14"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,12"
+                   Foreground="Gray"/>
+
+        <!-- Scrollable WrapPanel para tarjetas -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <WrapPanel x:Name="CardsPanel"
+                       HorizontalAlignment="Left"
+                       Orientation="Horizontal"
+                       ItemWidth="300"
+                       ItemHeight="240"
+                       Margin="0,0,0,0"/>
+        </ScrollViewer>
+
+    </DockPanel>
+
+    <Window.Resources>
+        <!-- Estilo de tarjeta -->
+        <Style x:Key="PcCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#F7F7F7"/>
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Width" Value="300" />
+            <Setter Property="BorderBrush" Value="#DDD" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="0.25" Opacity="0.25" Color="#888"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo ProgressBar -->
+        <Style x:Key="BarStyle" TargetType="ProgressBar">
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="Margin" Value="0,4,0,8"/>
+            <Setter Property="Foreground" Value="#4CAF50"/>
+            <Setter Property="Background" Value="#DDD"/>
+            <Setter Property="BorderBrush" Value="#CCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+    </Window.Resources>
 </Window>

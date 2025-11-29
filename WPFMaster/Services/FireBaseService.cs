@@ -24,7 +24,6 @@ namespace WPFMaster.Services
             await client.SetAsync("machines/" + name, pc);
         }
 
-
         public async Task<Dictionary<string, PCInfo>> GetAllMachinesAsync()
         {
             FirebaseResponse response = await client.GetAsync("machines");

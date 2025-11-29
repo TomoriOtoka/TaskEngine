@@ -59,13 +59,25 @@
               "target": "Package",
               "version": "[5.0.0, )"
             },
+            "LibreHardwareMonitorLib": {
+              "target": "Package",
+              "version": "[0.9.4, )"
+            },
             "Newtonsoft.Json": {
               "target": "Package",
               "version": "[13.0.4, )"
             },
+            "System.Diagnostics.PerformanceCounter": {
+              "target": "Package",
+              "version": "[10.0.0, )"
+            },
             "System.Management": {
               "target": "Package",
               "version": "[10.0.0, )"
+            },
+            "Wpf.Ui": {
+              "target": "Package",
+              "version": "[3.4.2.7, )"
             }
           },
           "imports": [
@@ -83,7 +95,7 @@
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             },
-            "Microsoft.WindowsDesktop.App.WPF": {
+            "Microsoft.WindowsDesktop.App": {
               "privateAssets": "none"
             }
           },
