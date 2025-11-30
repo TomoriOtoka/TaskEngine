@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WPFMaster")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+abdbb0b367dd852f8f3fd3d18711871847a8d83d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db0fba90507eb385d1ff039b77e3da7ccd1d30ee")]
 [assembly: System.Reflection.AssemblyProductAttribute("WPFMaster")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WPFMaster")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

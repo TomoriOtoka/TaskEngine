@@ -6,6 +6,8 @@ namespace WPFMaster
     public partial class App : System.Windows.Application  // <--- calificado
     {
         private System.Windows.Forms.NotifyIcon _notifyIcon;
+        private ClientService? _clientService;
+
 
         protected override void OnStartup(System.Windows.StartupEventArgs e)
         {
@@ -36,12 +38,17 @@ namespace WPFMaster
                 _notifyIcon.ContextMenuStrip.Items.Add("Salir", null, (s, ev) =>
                 {
                     _notifyIcon.Visible = false;
-                    System.Windows.Application.Current.Shutdown();  // <--- calificado
+                    _clientService?.Dispose();
+                    System.Windows.Application.Current.Shutdown();
                 });
 
-                // Registrar cliente en Firebase
-                _ = RegisterClientAsync(machine);
+                // INICIAR cliente real
+                _clientService = new ClientService();
+                _clientService.Start();   // <<--- ESTO ERA LO QUE FALTABA
+
+                Console.WriteLine("ClientService iniciado.");
             }
+
         }
 
         private async Task RegisterClientAsync(string machineName)

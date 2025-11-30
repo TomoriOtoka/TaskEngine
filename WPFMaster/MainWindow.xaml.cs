@@ -223,11 +223,36 @@ namespace WPFMaster
                         }
 
 
-                        // Actualizar datos existentes
+                        // --- DETECTAR OFFLINE POR INACTIVIDAD ---
+                        bool isOfflineByTime = false;
+
+                        if (DateTime.TryParse(pc.LastUpdate, null,
+                            System.Globalization.DateTimeStyles.RoundtripKind,
+                            out DateTime last))
+                        {
+                            var diff = DateTime.UtcNow - last;
+
+                            // Si no actualiza hace más de 10s → OFFLINE
+                            if (diff.TotalSeconds > 10)
+                                isOfflineByTime = true;
+                        }
+
+                        // Estado final del online
+                        bool finalOnline = pc.IsOnline && !isOfflineByTime;
+
+                        // Obtener controles
                         var controls = _pcControls[pc.PCName];
-                        controls.OnlineText.Text = pc.IsOnline ? "ONLINE" : "OFFLINE";
-                        controls.OnlineText.Foreground = (SolidColorBrush)(new BrushConverter().ConvertFrom(pc.IsOnline ? "#4CAF50" : "#F44336"));
-                        controls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
+
+                        // Mostrar ONLINE / OFFLINE
+                        controls.OnlineText.Text = finalOnline ? "ONLINE" : "OFFLINE";
+                        controls.OnlineText.Foreground =
+                            (SolidColorBrush)new BrushConverter().ConvertFrom(
+                                finalOnline ? "#4CAF50" : "#F44336"
+                            );
+
+                        // Actualizar tiempos y datos
+                        controls.LastUpdateText.Text =
+                            $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
 
                         controls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
                         controls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
@@ -237,6 +262,7 @@ namespace WPFMaster
                         AnimateProgressBar(controls.CpuBar, pc.CpuUsage);
                         AnimateProgressBar(controls.RamBar, pc.RamUsagePercent);
                         AnimateProgressBar(controls.DiskBar, pc.DiskUsagePercent);
+
                     }
 
                     StatusBlock.Text = $"Última actualización: {DateTime.Now:HH:mm:ss}";
@@ -247,8 +273,6 @@ namespace WPFMaster
                 Dispatcher.Invoke(() => StatusBlock.Text = $"Error (Refresh): {ex.Message}");
             }
         }
-
-
 
         private void AnimateProgressBar(WpfProgressBar bar, double value)
         {
@@ -262,18 +286,39 @@ namespace WPFMaster
 
         private string ToRelativeTime(string isoDate)
         {
-            if (!DateTime.TryParse(isoDate, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime utcTime))
+            if (!DateTime.TryParse(isoDate, null,
+                System.Globalization.DateTimeStyles.RoundtripKind,
+                out DateTime utcTime))
                 return "Fecha inválida";
 
-            DateTime localTime = utcTime.ToLocalTime();
-            TimeSpan diff = DateTime.Now - localTime;
+            TimeSpan diff = DateTime.UtcNow - utcTime;
 
-            if (diff.TotalSeconds < 60) return "hace unos segundos";
-            if (diff.TotalMinutes < 60) return $"hace {Math.Floor(diff.TotalMinutes)} min";
-            if (diff.TotalHours < 24) return $"hace {Math.Floor(diff.TotalHours)} horas";
-            if (diff.TotalDays < 2) return "hace 1 día";
-            return $"hace {Math.Floor(diff.TotalDays)} días";
+            if (diff.TotalSeconds < 60)
+                return "hace unos segundos";
+
+            // Minutos
+            if (diff.TotalMinutes < 60)
+            {
+                int mins = (int)Math.Floor(diff.TotalMinutes);
+                return mins == 1 ? "hace 1 minuto" : $"hace {mins} minutos";
+            }
+
+            // Horas
+            if (diff.TotalHours < 24)
+            {
+                int hours = (int)Math.Floor(diff.TotalHours);
+                return hours == 1 ? "hace 1 hora" : $"hace {hours} horas";
+            }
+
+            // Días
+            if (diff.TotalDays < 2)
+                return "hace 1 día";
+
+            int days = (int)Math.Floor(diff.TotalDays);
+            return $"hace {days} días";
         }
+
+
 
         protected override void OnClosed(EventArgs e)
         {
