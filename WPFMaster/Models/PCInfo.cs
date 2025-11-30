@@ -11,5 +11,8 @@
         public float DiskUsagePercent { get; set; }  // porcentaje
         public bool IsOnline { get; set; }           // true si activo
         public string LastUpdate { get; set; }       // ISO timestamp
+        public bool ForbiddenAppOpen { get; set; } = false; // Si esta usando una aplicación prohibida
+
+
     }
 }

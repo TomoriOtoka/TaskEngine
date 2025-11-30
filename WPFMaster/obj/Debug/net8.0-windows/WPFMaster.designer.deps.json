@@ -106,6 +106,17 @@
         }
       },
       "Microsoft.NETCore.Platforms/5.0.0": {},
+      "Microsoft.Toolkit.Uwp.Notifications/7.1.3": {
+        "dependencies": {
+          "System.ValueTuple": "4.5.0"
+        },
+        "runtime": {
+          "lib/net5.0/Microsoft.Toolkit.Uwp.Notifications.dll": {
+            "assemblyVersion": "7.1.0.0",
+            "fileVersion": "7.1.3.1"
+          }
+        }
+      },
       "Microsoft.Win32.Registry/5.0.0": {
         "dependencies": {
           "System.Security.AccessControl": "5.0.0",
@@ -600,11 +611,12 @@
           }
         }
       },
-      "WPF.UI/3.4.2.7": {
+      "System.ValueTuple/4.5.0": {},
+      "WPF.UI/3.1.0": {
         "runtime": {
-          "lib/net451/WPF.UI.dll": {
-            "assemblyVersion": "3.4.2.7",
-            "fileVersion": "3.4.2.7"
+          "lib/net40/WPF.UI.dll": {
+            "assemblyVersion": "3.1.0.1",
+            "fileVersion": "3.1.0.1"
           }
         }
       }
@@ -680,6 +692,13 @@
       "sha512": "sha512-VyPlqzH2wavqquTcYpkIIAQ6WdenuKoFN0BdYBbCWsclXacSOHNQn66Gt4z5NBqEYW0FAPm5rlvki9ZiCij5xQ==",
       "path": "microsoft.netcore.platforms/5.0.0",
       "hashPath": "microsoft.netcore.platforms.5.0.0.nupkg.sha512"
+    },
+    "Microsoft.Toolkit.Uwp.Notifications/7.1.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-A1dglAzb24gjehmb7DwGd07mfyZ1gacAK7ObE0KwDlRc3mayH2QW7cSOy3TkkyELjLg19OQBuhPOj4SpXET9lg==",
+      "path": "microsoft.toolkit.uwp.notifications/7.1.3",
+      "hashPath": "microsoft.toolkit.uwp.notifications.7.1.3.nupkg.sha512"
     },
     "Microsoft.Win32.Registry/5.0.0": {
       "type": "package",
@@ -905,12 +924,19 @@
       "path": "system.threading.accesscontrol/10.0.0",
       "hashPath": "system.threading.accesscontrol.10.0.0.nupkg.sha512"
     },
-    "WPF.UI/3.4.2.7": {
+    "System.ValueTuple/4.5.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-sE+BGb+mFJB96wQ8wArVBqoUQkj1/vOV7GdFb1iWD5Y8iwHSIX83aEcda5gxzCOH2h5ifD9ul7JEm7mvohbgMg==",
-      "path": "wpf.ui/3.4.2.7",
-      "hashPath": "wpf.ui.3.4.2.7.nupkg.sha512"
+      "sha512": "sha512-okurQJO6NRE/apDIP23ajJ0hpiNmJ+f0BwOlB/cSqTLQlw5upkf+5+96+iG2Jw40G1fCVCyPz/FhIABUjMR+RQ==",
+      "path": "system.valuetuple/4.5.0",
+      "hashPath": "system.valuetuple.4.5.0.nupkg.sha512"
+    },
+    "WPF.UI/3.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-OdptzLTlGgWzdV9HEjT3/7D6zuqMGipnwCMAK1MOil0qbJNKggiZAQPzkbkRcVW6M/yEwAmevrisPff2jE5c0w==",
+      "path": "wpf.ui/3.1.0",
+      "hashPath": "wpf.ui.3.1.0.nupkg.sha512"
     }
   }
 }

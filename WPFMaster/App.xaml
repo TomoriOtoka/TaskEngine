@@ -3,10 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <!-- Carga global de estilos y templates de Wpf.Ui -->
-                <ResourceDictionary Source="pack://application:,,,/Wpf.Ui;component/WpfUi.xaml" />
-            </ResourceDictionary.MergedDictionaries>
+            <!-- Tus recursos locales aquí -->
         </ResourceDictionary>
     </Application.Resources>
 </Application>
+

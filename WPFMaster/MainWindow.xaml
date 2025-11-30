@@ -6,7 +6,6 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow">
 
-
     <Window.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="#DCEFFE" Offset="0"/>
@@ -14,35 +13,39 @@
         </LinearGradientBrush>
     </Window.Background>
 
-    <DockPanel LastChildFill="True" Margin="10">
+    <!-- ENVOLTORIO GENERAL -->
+    <Grid>
+        <!-- TU UI ORIGINAL -->
+        <DockPanel LastChildFill="True" Margin="10">
+            <TextBlock x:Name="TitleBlock"
+                       DockPanel.Dock="Top"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Margin="0,0,0,8"
+                       Foreground="Black"/>
+            <TextBlock x:Name="StatusBlock"
+                       DockPanel.Dock="Top"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,12"
+                       Foreground="Gray"/>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <WrapPanel x:Name="CardsPanel"
+                           HorizontalAlignment="Left"
+                           Orientation="Horizontal"
+                           ItemWidth="300"
+                           ItemHeight="240"
+                           Margin="0,0,0,0"/>
+            </ScrollViewer>
+        </DockPanel>
 
-        <!-- Bloque de título -->
-        <TextBlock x:Name="TitleBlock"
-                   DockPanel.Dock="Top"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Margin="0,0,0,8"
-                   Foreground="Black"/>
-
-        <!-- Bloque de estado/última actualización -->
-        <TextBlock x:Name="StatusBlock"
-                   DockPanel.Dock="Top"
-                   FontSize="14"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,12"
-                   Foreground="Gray"/>
-
-        <!-- Scrollable WrapPanel para tarjetas -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <WrapPanel x:Name="CardsPanel"
-                       HorizontalAlignment="Left"
-                       Orientation="Horizontal"
-                       ItemWidth="300"
-                       ItemHeight="240"
-                       Margin="0,0,0,0"/>
-        </ScrollViewer>
-
-    </DockPanel>
+        <!-- CONTENEDOR DE TOASTS -->
+        <Canvas x:Name="ToastContainer"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0 0 20 20"
+                IsHitTestVisible="False"/>
+    </Grid>
 
     <Window.Resources>
         <!-- Estilo de tarjeta -->
@@ -56,7 +59,10 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="6" ShadowDepth="0.25" Opacity="0.25" Color="#888"/>
+                    <DropShadowEffect BlurRadius="6"
+                                      ShadowDepth="0.25"
+                                      Opacity="0.25"
+                                      Color="#888"/>
                 </Setter.Value>
             </Setter>
         </Style>

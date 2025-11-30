@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Linq;
 using System.Timers;
 using WPFMaster.Models;
 using WPFMaster.Utils;
@@ -64,6 +65,57 @@ namespace WPFMaster.Services
         /// </summary>
         private async Task TimerTickAsync()
         {
+
+            // Al principio de tu método TimerTickAsync o donde actualices el estado
+            bool forbiddenAppOpen = false;
+            List<string> openForbiddenApps = new List<string>();
+
+            // Lista negra de apps prohibidas
+            string[] forbidden = new string[]
+            {
+                "steam",
+                "epicgameslauncher",
+                "roblox",
+                "minecraft",
+                "valorant",
+                "fortnite",
+                "leagueoflegends",
+                "discord"
+            };
+
+            // Detecta procesos prohibidos de forma segura
+            try
+            {
+                var processes = System.Diagnostics.Process.GetProcesses();
+
+                foreach (var p in processes)
+                {
+                    try
+                    {
+                        string name = p.ProcessName.ToLowerInvariant();
+
+                        foreach (var f in forbidden)
+                        {
+                            // Coincidencia exacta o inicio del nombre
+                            if (name == f || name.StartsWith(f))
+                            {
+                                openForbiddenApps.Add(name);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignorar procesos que no se puedan leer
+                    }
+                }
+
+                forbiddenAppOpen = openForbiddenApps.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                Log($"Process scan failed: {ex.Message}");
+            }
+
             try
             {
                 float cpu = 0f;
@@ -122,7 +174,8 @@ namespace WPFMaster.Services
                     UsedRamMB = usedMB,
                     DiskUsagePercent = disk,
                     IsOnline = true,
-                    LastUpdate = DateTime.UtcNow.ToString("o")
+                    LastUpdate = DateTime.UtcNow.ToString("o"),
+                    ForbiddenAppOpen = forbiddenAppOpen
                 };
 
                 try

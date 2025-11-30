@@ -10,7 +10,13 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
-  <ItemGroup>
+	<ItemGroup>
+		<Reference Include="Windows">
+			<HintPath>$(MSBuildProgramFiles32)\Windows Kits\10\UnionMetadata\Windows.winmd</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
     <COMReference Include="{215d64d2-031c-33c7-96e3-61794cd1ee61}">
       <WrapperTool>tlbimp</WrapperTool>
       <VersionMinor>4</VersionMinor>
@@ -29,10 +35,11 @@
     <PackageReference Include="FirebaseDatabase.net" Version="5.0.0" />
     <PackageReference Include="FireSharp" Version="2.0.4" />
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0" />
     <PackageReference Include="System.Management" Version="10.0.0" />
-    <PackageReference Include="Wpf.Ui" Version="3.4.2.7" />
+    <PackageReference Include="Wpf.Ui" Version="3.0.5.7" />
   </ItemGroup>
 
   <ItemGroup>
