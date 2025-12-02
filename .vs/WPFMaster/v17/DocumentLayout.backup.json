@@ -135,8 +135,7 @@
               "ViewState": "AgIAAAkAAAAAAAAAAAAUwCUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-25T18:34:04.792Z",
-              "IsPinned": true,
-              "EditorCaption": ""
+              "IsPinned": true
             },
             {
               "$type": "Document",
@@ -148,8 +147,7 @@
               "RelativeToolTip": "WPFMaster\\MainWindow.xaml.cs",
               "ViewState": "AgIAAPoAAAAAAAAAAAAtwAYBAABUAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-24T14:57:54.259Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-24T14:57:54.259Z"
             },
             {
               "$type": "Document",
@@ -161,8 +159,7 @@
               "RelativeToolTip": "WPFMaster\\Services\\ClientService.cs",
               "ViewState": "AgIAALQAAAAAAAAAAAAmwMoAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-02T03:34:45.184Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-02T03:34:45.184Z"
             },
             {
               "$type": "Document",
@@ -174,8 +171,7 @@
               "RelativeToolTip": "WPFMaster\\Services\\FireBaseService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB4AAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-25T16:40:04.311Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-25T16:40:04.311Z"
             },
             {
               "$type": "Document",
@@ -183,12 +179,11 @@
               "Title": "MasterList.cs",
               "DocumentMoniker": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Config\\MasterList.cs",
               "RelativeDocumentMoniker": "WPFMaster\\Config\\MasterList.cs",
-              "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Config\\MasterList.cs*",
-              "RelativeToolTip": "WPFMaster\\Config\\MasterList.cs*",
+              "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Config\\MasterList.cs",
+              "RelativeToolTip": "WPFMaster\\Config\\MasterList.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAaAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-28T21:54:11.486Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-28T21:54:11.486Z"
             },
             {
               "$type": "Document",
@@ -199,8 +194,7 @@
               "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\LoginWindow.xaml",
               "RelativeToolTip": "WPFMaster\\LoginWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-12-01T23:39:17.995Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-01T23:39:17.995Z"
             },
             {
               "$type": "Document",
@@ -211,8 +205,7 @@
               "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\MainWindow.xaml",
               "RelativeToolTip": "WPFMaster\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-11-24T14:35:07.85Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-24T14:35:07.85Z"
             },
             {
               "$type": "Document",
@@ -224,8 +217,7 @@
               "RelativeToolTip": "WPFMaster\\Models\\PCInfo.cs",
               "ViewState": "AgIAAAQAAAAAAAAAAAAzwBAAAAAyAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-25T18:32:04.477Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-25T18:32:04.477Z"
             },
             {
               "$type": "Document",
@@ -249,8 +241,7 @@
               "RelativeToolTip": "WPFMaster\\Services\\MasterService.cs",
               "ViewState": "AgIAAAwAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-25T18:42:34.807Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-25T18:42:34.807Z"
             },
             {
               "$type": "Document",
@@ -274,8 +265,7 @@
               "RelativeToolTip": "WPFMaster\\Task Engine.csproj",
               "ViewState": "AgIAAAMAAAAAAAAAAAAAABIAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-11-24T14:52:43.792Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-24T14:52:43.792Z"
             },
             {
               "$type": "Document",
@@ -323,8 +313,7 @@
               "RelativeToolTip": "..\\..\\..\\..\\..\\..\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\amd64\\Microsoft.Common.CurrentVersion.targets",
               "ViewState": "AgIAAAUVAAAAAAAAAAD4vxEVAAAEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003801|",
-              "WhenOpened": "2025-11-30T03:59:14.548Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-30T03:59:14.548Z"
             },
             {
               "$type": "Document",
@@ -347,8 +336,7 @@
               "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
               "RelativeToolTip": "WPFMaster\\Task Engine.csproj",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-12-02T02:35:22.59Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-02T02:35:22.59Z"
             },
             {
               "$type": "Document",
@@ -359,8 +347,7 @@
               "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\App.xaml",
               "RelativeToolTip": "WPFMaster\\App.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-12-02T01:26:08.34Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-02T01:26:08.34Z"
             },
             {
               "$type": "Document",
@@ -372,8 +359,7 @@
               "RelativeToolTip": "WPFMaster\\AssemblyInfo.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-29T19:33:03.706Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-29T19:33:03.706Z"
             },
             {
               "$type": "Document",
@@ -420,8 +406,7 @@
               "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\ClientWindow.xaml",
               "RelativeToolTip": "WPFMaster\\ClientWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-11-29T17:50:27.675Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-29T17:50:27.675Z"
             }
           ]
         }
