@@ -14,5 +14,7 @@
         public bool ForbiddenAppOpen { get; set; } = false; // Si esta usando una aplicación prohibida
         public List<string> ForbiddenProcesses { get; set; } = new List<string>();
 
+        public string Nickname { get; set; } = "";
+
     }
 }

@@ -145,7 +145,7 @@ namespace TaskEngine
             FlashWindowEx(ref fw);
         }
 
-        private async Task RefreshAsync()
+        private async Task  RefreshAsync()
         {
             try
             {
@@ -181,65 +181,86 @@ namespace TaskEngine
 
                 Dispatcher.Invoke(() =>
                 {
+                    // Dentro de Dispatcher.Invoke en RefreshAsync:
                     foreach (var pc in list)
                     {
                         // --- CREAR CONTROLES SI NO EXISTEN ---
                         if (!_pcControls.ContainsKey(pc.PCName))
                         {
-                            Border card = new Border
+                            // Card principal
+                            var card = new Border
                             {
                                 CornerRadius = new CornerRadius(10),
                                 ClipToBounds = true,
                                 Opacity = 0,
                                 Margin = new Thickness(5),
-                                Background = new LinearGradientBrush(
-                                    Colors.White,
-                                    Color.FromRgb(200, 230, 255),
-                                    new Point(0, 0),
-                                    new Point(0, 1)
-                                )
+                                Background = new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1)),
+                                BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220)),
+                                BorderThickness = new Thickness(1)
                             };
 
-                            Grid cardGrid = new Grid();
-                            card.Child = cardGrid;
+                            var stack = new StackPanel { Margin = new Thickness(10) };
+                            card.Child = stack;
 
-                            StackPanel stack = new StackPanel { Margin = new Thickness(10) };
-                            cardGrid.Children.Add(stack);
-
-                            TextBlock nameText = new TextBlock { Text = pc.PCName, FontSize = 18, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 4) };
-                            TextBlock onlineText = new TextBlock { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) };
-                            TextBlock cpuText = new TextBlock();
-                            WpfProgressBar cpuBar = new WpfProgressBar { Style = (Style)FindResource("BarStyle"), Height = 20, Margin = new Thickness(0, 2, 0, 2) };
-                            TextBlock tempText = new TextBlock();
-                            TextBlock ramText = new TextBlock();
-                            WpfProgressBar ramBar = new WpfProgressBar { Style = (Style)FindResource("BarStyle"), Height = 20, Margin = new Thickness(0, 2, 0, 2) };
-                            TextBlock diskText = new TextBlock();
-                            WpfProgressBar diskBar = new WpfProgressBar { Style = (Style)FindResource("BarStyle"), Height = 20, Margin = new Thickness(0, 2, 0, 2) };
-                            TextBlock lastText = new TextBlock { Foreground = Brushes.Gray, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
-
-                            // Forbidden text area (lista compacta)
-                            TextBlock forbiddenText = new TextBlock
+                            // --- Contenedor superior: nombre + botón ---
+                            var topPanel = new DockPanel
                             {
-                                Foreground = Brushes.Red,
+                                LastChildFill = false,
+                                Margin = new Thickness(0, 0, 0, 4)
+                            };
+
+                            var nameText = new TextBlock
+                            {
+                                Text = pc.PCName,
+                                FontSize = 18,
+                                FontWeight = FontWeights.Bold,
+                                VerticalAlignment = VerticalAlignment.Center
+                            };
+                            DockPanel.SetDock(nameText, Dock.Left);
+
+                            var nicknameText = new TextBlock
+                            {
+                                Text = string.IsNullOrEmpty(pc.Nickname) ? "Sin apodo" : pc.Nickname,
                                 FontSize = 12,
-                                Margin = new Thickness(0, 4, 0, 0),
-                                Visibility = Visibility.Collapsed,
-                                TextWrapping = TextWrapping.Wrap
+                                Foreground = Brushes.Gray,
+                                FontStyle = FontStyles.Italic,
+                                Margin = new Thickness(0, 0, 0, 4)
                             };
 
-                            // Botón para pedir matar procesos prohibidos
-                            Button killForbiddenBtn = new Button
+                            // Agregar debajo del nombre de la PC
+                            
+
+
+                            var killForbiddenBtn = new Button
                             {
-                                Content = "Cerrar apps prohibidas",
-                                Padding = new Thickness(6),
-                                Margin = new Thickness(0, 8, 0, 0),
+                                Content = "✖", // pequeño icono
+                                Width = 24,
+                                Height = 24,
+                                Margin = new Thickness(8, 0, 0, 0),
                                 Tag = pc.PCName,
                                 IsEnabled = false
                             };
                             killForbiddenBtn.Click += KillForbiddenBtn_Click;
+                            DockPanel.SetDock(killForbiddenBtn, Dock.Right);
 
-                            // Añadimos los elementos al stack (orden visual)
-                            stack.Children.Add(nameText);
+                            topPanel.Children.Add(nameText);
+                            topPanel.Children.Add(killForbiddenBtn);
+
+                            // --- Agregar topPanel al stack ---
+                            stack.Children.Add(topPanel);
+
+                            // --- Datos del PC ---
+                            var onlineText = new TextBlock { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) };
+                            var cpuText = new TextBlock();
+                            var cpuBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
+                            var tempText = new TextBlock();
+                            var ramText = new TextBlock();
+                            var ramBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
+                            var diskText = new TextBlock();
+                            var diskBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
+                            var lastText = new TextBlock { Foreground = Brushes.Gray, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
+
+                            stack.Children.Add(nicknameText); // después de nameText
                             stack.Children.Add(onlineText);
                             stack.Children.Add(cpuText);
                             stack.Children.Add(cpuBar);
@@ -248,15 +269,28 @@ namespace TaskEngine
                             stack.Children.Add(ramBar);
                             stack.Children.Add(diskText);
                             stack.Children.Add(diskBar);
-                            stack.Children.Add(lastText);
-                            stack.Children.Add(forbiddenText);
-                            stack.Children.Add(killForbiddenBtn);
+                            stack.Children.Add(lastText);   
 
+                            // --- Scroll para procesos prohibidos ---
+                            var forbiddenScroll = new ScrollViewer
+                            {
+                                Height = 60,
+                                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+                            };
+                            var forbiddenText = new TextBlock
+                            {
+                                Foreground = Brushes.Red,
+                                FontSize = 12,
+                                TextWrapping = TextWrapping.Wrap
+                            };
+                            forbiddenScroll.Content = forbiddenText;
+
+                            stack.Children.Add(forbiddenScroll);
+
+                            // --- Agregar tarjeta al panel principal ---
                             CardsPanel.Children.Add(card);
 
-                            DoubleAnimation fade = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
-                            card.BeginAnimation(Border.OpacityProperty, fade);
-
+                            // --- Guardar controles ---
                             _pcControls[pc.PCName] = new PCControls
                             {
                                 Card = card,
@@ -269,83 +303,56 @@ namespace TaskEngine
                                 DiskText = diskText,
                                 OnlineText = onlineText,
                                 LastUpdateText = lastText,
+                                NicknameText = nicknameText,
+                                ForbiddenScroll = forbiddenScroll,
                                 ForbiddenText = forbiddenText,
                                 KillForbiddenButton = killForbiddenBtn
                             };
-                        }
 
 
-                        // --- OBTENER CONTROLES ---
-                        var controls = _pcControls[pc.PCName];
-
-                        // --- ONLINE / OFFLINE SEGÚN LASTUPDATE ---
-                        bool finalOnline = false;
-                        if (!string.IsNullOrEmpty(pc.LastUpdate) &&
-                            DateTime.TryParse(pc.LastUpdate, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime lastUpdateTime))
-                        {
-                            var diff = DateTime.UtcNow - lastUpdateTime;
-                            finalOnline = diff.TotalSeconds <= 15 && pc.IsOnline; // offline si no actualiza en 15s
-                        }
-
-                        controls.OnlineText.Text = finalOnline ? "ONLINE" : "OFFLINE";
-                        controls.OnlineText.Foreground =
-                            (SolidColorBrush)new BrushConverter().ConvertFrom(finalOnline ? "#4CAF50" : "#F44336");
-
-                        // --- ForbiddenAppOpen ---
-                        if (pc.ForbiddenAppOpen)
-                        {
-                            controls.Card.Background = new SolidColorBrush(Color.FromRgb(255, 230, 230));
-                            controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 50, 50));
-
-                            
-                            // --- Actualizar la lista de procesos prohibidos y el estado del botón ---
-                            if (pc.ForbiddenProcesses != null && pc.ForbiddenProcesses.Count > 0)
-                            {
-                                controls.ForbiddenText.Text = "Procesos:\n" + string.Join("\n", pc.ForbiddenProcesses);
-                                controls.ForbiddenText.Visibility = Visibility.Visible;
-                                controls.KillForbiddenButton.IsEnabled = true;
-                            }
-                            else
-                            {
-                                controls.ForbiddenText.Visibility = Visibility.Collapsed;
-                                controls.KillForbiddenButton.IsEnabled = false;
-                            }
-
-
-                            ShowToast(
-                                "Alerta de Seguridad",
-                                $"El PC {pc.PCName} abrió una aplicación prohibida.",
-                                pc.PCName + "_ForbiddenApp"
-                            );
-
-                            FlashWindow(this, 10);
-                        }
-                        else
-                        {
-                            controls.Card.Background = new LinearGradientBrush(
-                                Colors.White,
-                                Color.FromRgb(200, 230, 255),
-                                new Point(0, 0),
-                                new Point(0, 1)
-                            );
-                            controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220));
-
-                            // Ocultar la lista cuando todo está normal
-                            controls.ForbiddenText.Visibility = Visibility.Collapsed;
+                            // --- Animación fade in ---
+                            card.BeginAnimation(Border.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5)));
                         }
 
 
                         // --- ACTUALIZAR DATOS ---
-                        controls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
-                        controls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
-                        controls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
-                        controls.RamText.Text = $"RAM: {pc.RamUsagePercent}% ({pc.UsedRamMB}/{pc.TotalRamMB} MB)";
-                        controls.DiskText.Text = $"DISCO: {pc.DiskUsagePercent}%";
+                        var pcControls = _pcControls[pc.PCName];
 
-                        AnimateProgressBar(controls.CpuBar, pc.CpuUsage);
-                        AnimateProgressBar(controls.RamBar, pc.RamUsagePercent);
-                        AnimateProgressBar(controls.DiskBar, pc.DiskUsagePercent);
-                    }
+                            bool isOnline = false;
+                            if (!string.IsNullOrEmpty(pc.LastUpdate) &&
+                                DateTime.TryParse(pc.LastUpdate, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime lastUpdate))
+                            {
+                                isOnline = (DateTime.UtcNow - lastUpdate).TotalSeconds <= 15 && pc.IsOnline;
+                            }
+                            pcControls.OnlineText.Text = isOnline ? "ONLINE" : "OFFLINE";
+                            pcControls.OnlineText.Foreground = isOnline ? Brushes.Green : Brushes.Red;
+                            pcControls.NicknameText.Text = string.IsNullOrEmpty(pc.Nickname) ? "Sin apodo" : pc.Nickname;
+
+
+
+                        bool hasForbidden = pc.ForbiddenProcesses != null && pc.ForbiddenProcesses.Count > 0;
+                            pcControls.ForbiddenText.Text = hasForbidden ? string.Join("\n", pc.ForbiddenProcesses) : "";
+                            pcControls.KillForbiddenButton.IsEnabled = hasForbidden;
+                            pcControls.ForbiddenScroll.Visibility = Visibility.Visible; // siempre visible
+
+                            pcControls.Card.Background = hasForbidden
+                                ? new SolidColorBrush(Color.FromRgb(255, 230, 230))
+                                : new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1));
+                            pcControls.Card.BorderBrush = hasForbidden
+                                ? new SolidColorBrush(Color.FromRgb(220, 50, 50))
+                                : new SolidColorBrush(Color.FromRgb(220, 220, 220));
+
+                            // Actualizar valores de los demás controles
+                            pcControls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
+                            pcControls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
+                            pcControls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
+                            pcControls.RamText.Text = $"RAM: {pc.RamUsagePercent}% ({pc.UsedRamMB}/{pc.TotalRamMB} MB)";
+                            pcControls.DiskText.Text = $"DISCO: {pc.DiskUsagePercent}%";
+
+                            AnimateProgressBar(pcControls.CpuBar, pc.CpuUsage);
+                            AnimateProgressBar(pcControls.RamBar, pc.RamUsagePercent);
+                            AnimateProgressBar(pcControls.DiskBar, pc.DiskUsagePercent);
+                        }
 
                     StatusBlock.Text = $"Última actualización: {DateTime.Now:HH:mm:ss}";
                 });
@@ -403,11 +410,14 @@ namespace TaskEngine
 
             // Nueva propiedad para mostrar procesos prohibidos en la tarjeta
             public TextBlock ForbiddenText { get; set; }
+            public ScrollViewer ForbiddenScroll { get; set; }
 
             // Si más adelante agregaste otras propiedades (ForbiddenListPanel, KillForbiddenButton, etc.)
             public System.Windows.Controls.StackPanel ForbiddenListPanel { get; set; }
             public TextBlock ForbiddenNoneText { get; set; }
             public System.Windows.Controls.Button KillForbiddenButton { get; set; }
+            public TextBlock NicknameText { get; set; }
+
         }
 
         private async void KillForbiddenBtn_Click(object sender, RoutedEventArgs e)
@@ -506,7 +516,5 @@ namespace TaskEngine
                 });
             });
         }
-
-
     }
 }

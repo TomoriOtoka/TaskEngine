@@ -25,6 +25,8 @@ namespace TaskEngine
             StatusBlock.Text = "Enviando datos...";
         }
 
+
+
         protected override void OnClosed(EventArgs e)
         {
             _timer?.Stop();

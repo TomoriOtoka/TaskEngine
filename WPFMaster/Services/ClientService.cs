@@ -15,12 +15,16 @@
             private readonly FirebaseService _firebase;
             private readonly string _pcName;
             private readonly Timer _timer;
-            private bool _disposed;
+            public string CurrentNickname { get; set; }
 
-            /// <summary>
-            /// Evento opcional para que la UI reciba logs (no obligatorio).
-            /// </summary>
-            public event Action<string> OnLog;
+             private bool _disposed;
+            private string _nickname;
+
+
+        /// <summary>
+        /// Evento opcional para que la UI reciba logs (no obligatorio).
+        /// </summary>
+        public event Action<string> OnLog;
 
             /// <summary>
             /// Intervalo en ms por defecto 3000 ms (3s). Puedes pasar otro valor en el constructor.
@@ -33,23 +37,58 @@
                 _timer.Elapsed += async (s, e) => await TimerTickAsync();
             }
 
-            /// <summary>
-            /// Inicia el envío periódico. Idempotente.
-            /// </summary>
-            public void Start()
-            {
-                if (_disposed) throw new ObjectDisposedException(nameof(ClientService));
-                if (_timer.Enabled) return;
+        /// <summary>
+        /// Inicia el envío periódico. Idempotente.
+        /// </summary>
+        public void Start()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(ClientService));
+            if (_timer.Enabled) return;
 
-                Log($"ClientService starting (interval {_timer.Interval}ms) for {_pcName}");
-                _timer.Start();
-                _ = TimerTickAsync(); // envía una primera actualización inmediata (fire-and-forget)
+            _ = RegisterIfFirstTimeAsync();
+            _ = InitializeNicknameAsync(); // lee o crea el nickname
+            _timer.Start();
+            _ = TimerTickAsync(); // primera actualización inmediata
+
+            Log($"ClientService starting (interval {_timer.Interval}ms) for {_pcName}");
+            _timer.Start();
+            _ = TimerTickAsync(); // primera actualización inmediata
+        }
+
+      
+
+        private async Task RegisterIfFirstTimeAsync()
+        {
+            var existing = await _firebase.GetMachineAsync(_pcName);
+            if (existing == null)
+            {
+                _nickname = _pcName; // por defecto
+                var info = new PCInfo
+                {
+                    PCName = _pcName,
+                    Nickname = _nickname,
+                    CpuUsage = 0,
+                    CpuTemperature = 0,
+                    RamUsagePercent = 0,
+                    TotalRamMB = 0,
+                    UsedRamMB = 0,
+                    DiskUsagePercent = 0,
+                    IsOnline = true,
+                    LastUpdate = DateTime.UtcNow.ToString("o")
+                };
+
+                await _firebase.SetMachineAsync(_pcName, info);
+            }
+            else
+            {
+                _nickname = existing.Nickname;
             }
 
-            /// <summary>
-            /// Para el envío periódico.
-            /// </summary>
-            public void Stop()
+        }
+        /// <summary>
+        /// Para el envío periódico.
+        /// </summary>
+        public void Stop()
             {
                 if (_disposed) return;
                 if (!_timer.Enabled) return;
@@ -100,10 +139,70 @@
                 }
             }
 
-            /// <summary>
-            /// Lógica que se ejecuta en cada tick. Maneja fallos parciales y siempre intenta enviar lo que pueda.
-            /// </summary>
-            private async Task TimerTickAsync()
+        private async Task InitializeNicknameAsync()
+        {
+            try
+            {
+                var existing = await _firebase.GetMachineAsync(_pcName); // intenta leer de Firebase
+
+                if (existing != null && !string.IsNullOrWhiteSpace(existing.Nickname))
+                {
+                    CurrentNickname = existing.Nickname; // conserva nickname existente
+                }
+                else
+                {
+                    CurrentNickname = _pcName; // por defecto
+                                               // crea registro inicial
+                    var info = new PCInfo
+                    {
+                        PCName = _pcName,
+                        CpuUsage = 0,
+                        CpuTemperature = 0,
+                        RamUsagePercent = 0,
+                        TotalRamMB = 0,
+                        UsedRamMB = 0,
+                        DiskUsagePercent = 0,
+                        IsOnline = true,
+                        LastUpdate = DateTime.UtcNow.ToString("o"),
+                        Nickname = CurrentNickname
+                    };
+                    await _firebase.SetMachineAsync(_pcName, info);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Error inicializando nickname: " + ex.Message);
+                CurrentNickname = _pcName;
+            }
+        }
+
+
+        /// <summary>
+        /// Lógica que se ejecuta en cada tick. Maneja fallos parciales y siempre intenta enviar lo que pueda.
+        /// </summary>
+        /// 
+        public async Task UpdateNicknameAsync(string newNickname)
+        {
+            CurrentNickname = newNickname;
+
+            try
+            {
+                var info = await _firebase.GetMachineAsync(_pcName);
+                if (info != null)
+                {
+                    info.Nickname = newNickname;
+                    await _firebase.SetMachineAsync(_pcName, info);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Error actualizando nickname: " + ex.Message);
+                throw;
+            }
+        }
+
+
+        private async Task TimerTickAsync()
             {
                 // -------------------------
                 // 1) Detectar procesos prohibidos
@@ -215,7 +314,9 @@
                         LastUpdate = DateTime.UtcNow.ToString("o"),
                         ForbiddenAppOpen = forbiddenAppOpen,
                         // Aquí incluimos la lista concreta de procesos prohibidos abiertos
-                        ForbiddenProcesses = openForbiddenApps
+                        ForbiddenProcesses = openForbiddenApps,
+                        Nickname = _nickname // usar el campo privado
+
                     };
 
                     // -------------------------

@@ -34,7 +34,7 @@
                            HorizontalAlignment="Left"
                            Orientation="Horizontal"
                            ItemWidth="300"
-                           ItemHeight="240"
+                           ItemHeight="300"
                            Margin="0,0,0,0"/>
             </ScrollViewer>
         </DockPanel>

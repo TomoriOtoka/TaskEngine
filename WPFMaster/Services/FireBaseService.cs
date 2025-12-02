@@ -24,6 +24,26 @@ namespace TaskEngine.Services
             await client.SetAsync("machines/" + name, pc);
         }
 
+        /// <summary>
+        /// Obtiene la información de una máquina por su nombre.
+        /// Devuelve null si no existe.
+        /// </summary>
+        public async Task<PCInfo> GetMachineAsync(string pcName)
+        {
+            try
+            {
+                var allMachines = await GetAllMachinesAsync();
+                if (allMachines != null && allMachines.TryGetValue(pcName, out var pcInfo))
+                    return pcInfo;
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public async Task<Dictionary<string, PCInfo>> GetAllMachinesAsync()
         {
             FirebaseResponse response = await client.GetAsync("machines");

@@ -81,10 +81,40 @@ namespace TaskEngine
                 ).Stream
             );
 
-            _notifyIcon.Text = "Task Engine - Cliente";   
+            _notifyIcon.Text = "Task Engine - Cliente";
             _notifyIcon.Visible = true;
 
             var menu = new System.Windows.Forms.ContextMenuStrip();
+
+            // 🔹 Cambiar nickname
+            menu.Items.Add("Cambiar nickname", null, async (s, ev) =>
+            {
+                string currentNickname = _clientService.CurrentNickname; // vamos a exponerlo en ClientService
+                string input = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Introduce el nuevo nickname:",
+                    "Cambiar nickname",
+                    currentNickname
+                );
+
+                if (!string.IsNullOrWhiteSpace(input) && input != currentNickname)
+                {
+                    // Actualizamos en el ClientService
+                    _clientService.CurrentNickname = input;
+
+                    // Actualizamos Firebase
+                    try
+                    {
+                        await _clientService.UpdateNicknameAsync(input);
+                        MessageBox.Show($"Nickname cambiado a '{input}'", "Éxito");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error al actualizar nickname: " + ex.Message, "Error");
+                    }
+                }
+            });
+
+            // 🔹 Salir
             menu.Items.Add("Salir", null, (s, ev) =>
             {
                 _notifyIcon.Visible = false;
@@ -93,5 +123,6 @@ namespace TaskEngine
 
             _notifyIcon.ContextMenuStrip = menu;
         }
+
     }
 }
