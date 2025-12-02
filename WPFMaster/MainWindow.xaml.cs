@@ -16,6 +16,7 @@ using TaskEngine.Models;
 using TaskEngine.Services;
 using TaskEngine.Utils;
 using Timer = System.Timers.Timer;
+using Button = System.Windows.Controls.Button;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using MessageBox = System.Windows.MessageBox;
@@ -28,6 +29,7 @@ namespace TaskEngine
     {
         private readonly string machineName = Environment.MachineName;
         private readonly FirebaseService firebase = new FirebaseService();
+        private ClientService _clientService;
 
         private Timer refreshTimer;
         private int _refreshRunning = 0;
@@ -47,6 +49,19 @@ namespace TaskEngine
             TitleBlock.Text = $"MASTER: {machineName}";
             _ = RegisterMasterAsync();
             StartRefreshLoop();
+
+            // Opcional: iniciar ClientService (esto hace que esta misma app tambien envíe su snapshot)
+            try
+            {
+                _clientService = new ClientService(3000);
+                _clientService.OnLog += msg => Console.WriteLine(msg);
+                _clientService.Start();
+            }
+            catch
+            {
+                // no fallar si algo pasa con cliente
+            }
+
         }
 
         private async Task RegisterMasterAsync()
@@ -202,6 +217,28 @@ namespace TaskEngine
                             WpfProgressBar diskBar = new WpfProgressBar { Style = (Style)FindResource("BarStyle"), Height = 20, Margin = new Thickness(0, 2, 0, 2) };
                             TextBlock lastText = new TextBlock { Foreground = Brushes.Gray, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
 
+                            // Forbidden text area (lista compacta)
+                            TextBlock forbiddenText = new TextBlock
+                            {
+                                Foreground = Brushes.Red,
+                                FontSize = 12,
+                                Margin = new Thickness(0, 4, 0, 0),
+                                Visibility = Visibility.Collapsed,
+                                TextWrapping = TextWrapping.Wrap
+                            };
+
+                            // Botón para pedir matar procesos prohibidos
+                            Button killForbiddenBtn = new Button
+                            {
+                                Content = "Cerrar apps prohibidas",
+                                Padding = new Thickness(6),
+                                Margin = new Thickness(0, 8, 0, 0),
+                                Tag = pc.PCName,
+                                IsEnabled = false
+                            };
+                            killForbiddenBtn.Click += KillForbiddenBtn_Click;
+
+                            // Añadimos los elementos al stack (orden visual)
                             stack.Children.Add(nameText);
                             stack.Children.Add(onlineText);
                             stack.Children.Add(cpuText);
@@ -212,6 +249,8 @@ namespace TaskEngine
                             stack.Children.Add(diskText);
                             stack.Children.Add(diskBar);
                             stack.Children.Add(lastText);
+                            stack.Children.Add(forbiddenText);
+                            stack.Children.Add(killForbiddenBtn);
 
                             CardsPanel.Children.Add(card);
 
@@ -229,9 +268,12 @@ namespace TaskEngine
                                 RamText = ramText,
                                 DiskText = diskText,
                                 OnlineText = onlineText,
-                                LastUpdateText = lastText
+                                LastUpdateText = lastText,
+                                ForbiddenText = forbiddenText,
+                                KillForbiddenButton = killForbiddenBtn
                             };
                         }
+
 
                         // --- OBTENER CONTROLES ---
                         var controls = _pcControls[pc.PCName];
@@ -255,13 +297,28 @@ namespace TaskEngine
                             controls.Card.Background = new SolidColorBrush(Color.FromRgb(255, 230, 230));
                             controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 50, 50));
 
+                            
+                            // --- Actualizar la lista de procesos prohibidos y el estado del botón ---
+                            if (pc.ForbiddenProcesses != null && pc.ForbiddenProcesses.Count > 0)
+                            {
+                                controls.ForbiddenText.Text = "Procesos:\n" + string.Join("\n", pc.ForbiddenProcesses);
+                                controls.ForbiddenText.Visibility = Visibility.Visible;
+                                controls.KillForbiddenButton.IsEnabled = true;
+                            }
+                            else
+                            {
+                                controls.ForbiddenText.Visibility = Visibility.Collapsed;
+                                controls.KillForbiddenButton.IsEnabled = false;
+                            }
+
+
                             ShowToast(
                                 "Alerta de Seguridad",
                                 $"El PC {pc.PCName} abrió una aplicación prohibida.",
                                 pc.PCName + "_ForbiddenApp"
                             );
 
-                            FlashWindow(this, 10); // Parpadeo en la barra de tareas
+                            FlashWindow(this, 10);
                         }
                         else
                         {
@@ -272,7 +329,11 @@ namespace TaskEngine
                                 new Point(0, 1)
                             );
                             controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220));
+
+                            // Ocultar la lista cuando todo está normal
+                            controls.ForbiddenText.Visibility = Visibility.Collapsed;
                         }
+
 
                         // --- ACTUALIZAR DATOS ---
                         controls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
@@ -321,7 +382,7 @@ namespace TaskEngine
 
         protected override void OnClosed(EventArgs e)
         {
-            try { refreshTimer?.Stop(); refreshTimer?.Dispose(); } catch { }
+            try { _clientService?.Dispose(); refreshTimer?.Stop(); refreshTimer?.Dispose(); } catch { }
             base.OnClosed(e);
         }
 
@@ -339,7 +400,37 @@ namespace TaskEngine
 
             public TextBlock OnlineText { get; set; }
             public TextBlock LastUpdateText { get; set; }
+
+            // Nueva propiedad para mostrar procesos prohibidos en la tarjeta
+            public TextBlock ForbiddenText { get; set; }
+
+            // Si más adelante agregaste otras propiedades (ForbiddenListPanel, KillForbiddenButton, etc.)
+            public System.Windows.Controls.StackPanel ForbiddenListPanel { get; set; }
+            public TextBlock ForbiddenNoneText { get; set; }
+            public System.Windows.Controls.Button KillForbiddenButton { get; set; }
         }
+
+        private async void KillForbiddenBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string pcName)
+            {
+                try
+                {
+                    var res = MessageBox.Show($"Enviar comando para cerrar apps prohibidas en {pcName}?", "Confirmar", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (res != MessageBoxResult.Yes) return;
+
+                    // Llama a FirebaseService para poner el comando en commands/{pcName}
+                    await firebase.SendClientCommandAsync(pcName, "KILL_FORBIDDEN");
+
+                    ShowToast("Comando enviado", $"Se envió comando de cierre a {pcName}", $"cmd_{pcName}_kill", 5000);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al enviar comando: " + ex.Message);
+                }
+            }
+        }
+
 
         // ==================== TOASTS CASEROS ====================
         private void ShowToast(string title, string message, string key, int durationMs = 10000)

@@ -29,5 +29,41 @@ namespace TaskEngine.Services
             FirebaseResponse response = await client.GetAsync("machines");
             return response.ResultAs<Dictionary<string, PCInfo>>() ?? new Dictionary<string, PCInfo>();
         }
+
+        public async Task SendClientCommandAsync(string pcName, string command)
+        {
+            // Si command es null → BORRAR comando
+            if (command == null)
+            {
+                await client.DeleteAsync("commands/" + pcName);
+                return;
+            }
+
+            // Guardar comando como string literal
+            await client.SetAsync("commands/" + pcName, command);
+        }
+
+        public async Task<string> GetClientCommandAsync(string pcName)
+        {
+            FirebaseResponse response = await client.GetAsync("commands/" + pcName);
+
+            if (response == null || response.Body == "null")
+                return null;
+
+            try
+            {
+                return response.ResultAs<string>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task ClearClientCommandAsync(string pcName)
+        {
+            await client.DeleteAsync("commands/" + pcName);
+        }
+
     }
 }
