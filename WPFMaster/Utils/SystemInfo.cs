@@ -6,7 +6,7 @@ using System.Management;
 using System.Threading;
 using LibreHardwareMonitor.Hardware;
 
-namespace WPFMaster.Utils
+namespace TaskEngine.Utils
 {
     public static class SystemInfo
     {

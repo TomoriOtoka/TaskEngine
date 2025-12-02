@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\App.xaml
-3763350986
+4-860347830
 
-131187980398
+17-1826833638
 224-71162724
-ClientWindow.xaml;MainWindow.xaml;ToastNotification.xaml;
+ClientWindow.xaml;LoginWindow.xaml;MainWindow.xaml;ToastNotification.xaml;
 
 False
 

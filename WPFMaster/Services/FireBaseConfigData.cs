@@ -1,7 +1,7 @@
 ﻿using FireSharp.Config;
 using FireSharp.Interfaces;
 
-namespace WPFMaster.Services
+namespace TaskEngine.Services
 {
     public static class FirebaseConfigData
     {

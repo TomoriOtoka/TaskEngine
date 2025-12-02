@@ -1,81 +1,97 @@
-﻿using WPFMaster.Models;
-using WPFMaster.Services;
+﻿using System;
+using System.Windows;
+using TaskEngine.Models;
+using TaskEngine.Services;
+using TaskEngine.Utils;
+using MessageBox = System.Windows.MessageBox;
+using Application = System.Windows.Application;
 
-namespace WPFMaster
+namespace TaskEngine
 {
-    public partial class App : System.Windows.Application  // <--- calificado
+    public partial class App : Application
     {
+        private const string MasterConfigFile = "master_config.json";
+        private ClientService _clientService;
         private System.Windows.Forms.NotifyIcon _notifyIcon;
-        private ClientService? _clientService;
 
-
-        protected override void OnStartup(System.Windows.StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
             string machine = Environment.MachineName.ToUpper();
 
-            bool isMaster = Array.Exists(MasterList.Masters, m => m.ToUpper() == machine);
-            Console.WriteLine("MachineName: " + machine);
-            Console.WriteLine("¿Es master? " + isMaster);
+            // 1️⃣ Verificar si esta PC es Master mediante tu clase estática
+            bool isMaster = MasterList.Masters
+                .Any(m => m.ToUpper() == machine);
 
-            if (isMaster)
+            // 2️⃣ Si NO está en masterlist → modo cliente directo
+            if (!isMaster)
             {
-                // Abrir ventana MASTER
-                MainWindow master = new MainWindow();
-                master.Show();
+                StartClientMode(machine);
+                return;
+            }
+
+            // 3️⃣ Cargar config del master (contiene password)
+            var cfg = SecretHelper.LoadConfig();
+
+            if (cfg == null)
+            {
+                // Crear config automáticamente
+                string password = "adminuemam2025";
+
+                string salt = SecretHelper.GenerateSalt();
+                string hash = SecretHelper.HashPassword(password, salt);
+
+                SecretHelper.SaveConfig(new MasterConfig
+                {
+                    PasswordHash = hash,
+                    Salt = salt
+                });
+
+                MessageBox.Show(
+                    "Config creada automáticamente.\nContraseña inicial: adminuemam2025",
+                    "Master Config"
+                );
+            }
+
+            // 4️⃣ Mostrar Login porque es Master
+            var login = new LoginWindow();
+            bool? result = login.ShowDialog();
+
+            if (result == true)
+            {
+                new MainWindow().Show();
             }
             else
             {
-                // Cliente → minimizado en tray
-                _notifyIcon = new System.Windows.Forms.NotifyIcon();
-                _notifyIcon.Icon = System.Drawing.SystemIcons.Application;
-                _notifyIcon.Text = $"Cliente: {machine}";
-                _notifyIcon.Visible = true;
-
-                // Menú del tray
-                _notifyIcon.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                _notifyIcon.ContextMenuStrip.Items.Add("Salir", null, (s, ev) =>
-                {
-                    _notifyIcon.Visible = false;
-                    _clientService?.Dispose();
-                    System.Windows.Application.Current.Shutdown();
-                });
-
-                // INICIAR cliente real
-                _clientService = new ClientService();
-                _clientService.Start();   // <<--- ESTO ERA LO QUE FALTABA
-
-                Console.WriteLine("ClientService iniciado.");
+                Current.Shutdown();
             }
-
         }
 
-        private async Task RegisterClientAsync(string machineName)
+
+        private void StartClientMode(string machine)
         {
-            try
-            {
-                var firebase = new FirebaseService();
+            _clientService = new ClientService();
+            _clientService.Start();
 
-                var info = new PCInfo
-                {
-                    PCName = machineName,
-                    CpuUsage = 0,
-                    CpuTemperature = 0,
-                    RamUsagePercent = 0,
-                    TotalRamMB = 0,
-                    UsedRamMB = 0,
-                    DiskUsagePercent = 0,
-                    IsOnline = true,
-                    LastUpdate = DateTime.UtcNow.ToString("o")
-                };
+            _notifyIcon = new System.Windows.Forms.NotifyIcon();
+            _notifyIcon.Icon = new System.Drawing.Icon(
+                Application.GetResourceStream(
+                    new Uri("pack://application:,,,/TaskEngine.ico")
+                ).Stream
+            );
 
-                await firebase.SetMachineAsync(machineName, info);
-            }
-            catch (Exception ex)
+            _notifyIcon.Text = "Task Engine - Cliente";   
+            _notifyIcon.Visible = true;
+
+            var menu = new System.Windows.Forms.ContextMenuStrip();
+            menu.Items.Add("Salir", null, (s, ev) =>
             {
-                System.Windows.MessageBox.Show("Error registrando CLIENT: " + ex.Message);
-            }
+                _notifyIcon.Visible = false;
+                Current.Shutdown();
+            });
+
+            _notifyIcon.ContextMenuStrip = menu;
         }
     }
 }

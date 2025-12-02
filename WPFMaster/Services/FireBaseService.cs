@@ -2,9 +2,9 @@
 using FireSharp.Response;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WPFMaster.Models;
+using TaskEngine.Models;
 
-namespace WPFMaster.Services
+namespace TaskEngine.Services
 {
     public class FirebaseService
     {

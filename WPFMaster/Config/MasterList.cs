@@ -1,4 +1,4 @@
-﻿namespace WPFMaster
+﻿namespace TaskEngine
 {
     public static class MasterList
     {

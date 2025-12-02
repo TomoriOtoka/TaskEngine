@@ -12,9 +12,9 @@ using System.Windows.Media;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System.Windows.Media.Effects;
-using WPFMaster.Models;
-using WPFMaster.Services;
-using WPFMaster.Utils;
+using TaskEngine.Models;
+using TaskEngine.Services;
+using TaskEngine.Utils;
 using Timer = System.Timers.Timer;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
@@ -22,7 +22,7 @@ using MessageBox = System.Windows.MessageBox;
 using Point = System.Windows.Point;
 using WpfProgressBar = System.Windows.Controls.ProgressBar;
 
-namespace WPFMaster
+namespace TaskEngine
 {
     public partial class MainWindow : Window
     {

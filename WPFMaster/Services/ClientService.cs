@@ -1,12 +1,14 @@
 ﻿using System;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Timers;
-using WPFMaster.Models;
-using WPFMaster.Utils;
+using TaskEngine.Models;
+using TaskEngine.Utils;
 using Timer = System.Timers.Timer;
 
-namespace WPFMaster.Services
+namespace TaskEngine.Services
 {
     public class ClientService : IDisposable
     {
@@ -61,45 +63,74 @@ namespace WPFMaster.Services
         public Task SendSnapshotAsync() => TimerTickAsync();
 
         /// <summary>
+        /// Mata procesos de la lista negra que estén corriendo (intenta con Kill(true)).
+        /// Público para que el Master pueda pedir esto remotamente.
+        /// </summary>
+        public void KillForbiddenProcesses()
+        {
+            string[] forbidden = GetForbiddenList();
+
+            try
+            {
+                var processes = Process.GetProcesses();
+                foreach (var p in processes)
+                {
+                    try
+                    {
+                        var name = p.ProcessName.ToLowerInvariant();
+                        if (forbidden.Any(f => name == f || name.StartsWith(f)))
+                        {
+                            try
+                            {
+                                Log($"Killing process {name} (pid {p.Id})");
+                                p.Kill(true);
+                            }
+                            catch (Exception exKill)
+                            {
+                                Log($"Failed to kill {name}: {exKill.Message}");
+                            }
+                        }
+                    }
+                    catch { /* ignore individual process access errors */ }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"KillForbiddenProcesses failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Lógica que se ejecuta en cada tick. Maneja fallos parciales y siempre intenta enviar lo que pueda.
         /// </summary>
         private async Task TimerTickAsync()
         {
-
-            // Al principio de tu método TimerTickAsync o donde actualices el estado
+            // -------------------------
+            // 1) Detectar procesos prohibidos
+            // -------------------------
             bool forbiddenAppOpen = false;
             List<string> openForbiddenApps = new List<string>();
 
-            // Lista negra de apps prohibidas
-            string[] forbidden = new string[]
-            {
-                "steam",
-                "epicgameslauncher",
-                "roblox",
-                "minecraft",
-                "valorant",
-                "fortnite",
-                "leagueoflegends",
-                "discord"
-            };
+            string[] forbidden = GetForbiddenList();
 
-            // Detecta procesos prohibidos de forma segura
             try
             {
-                var processes = System.Diagnostics.Process.GetProcesses();
+                var processes = Process.GetProcesses();
 
                 foreach (var p in processes)
                 {
                     try
                     {
+                        // ProcessName no incluye sufijo .exe, así que trabajamos con nombres sin extension
                         string name = p.ProcessName.ToLowerInvariant();
 
                         foreach (var f in forbidden)
                         {
-                            // Coincidencia exacta o inicio del nombre
+                            // Coincidencia exacta o inicio del nombre evita la mayoría de falsos positivos.
                             if (name == f || name.StartsWith(f))
                             {
                                 openForbiddenApps.Add(name);
+                                break;
                             }
                         }
                     }
@@ -109,6 +140,8 @@ namespace WPFMaster.Services
                     }
                 }
 
+                // Eliminamos duplicados y normalizamos
+                openForbiddenApps = openForbiddenApps.Distinct().ToList();
                 forbiddenAppOpen = openForbiddenApps.Count > 0;
             }
             catch (Exception ex)
@@ -116,6 +149,9 @@ namespace WPFMaster.Services
                 Log($"Process scan failed: {ex.Message}");
             }
 
+            // -------------------------
+            // 2) Leer métricas (CPU, temp, RAM, disco) — cada lectura en su try
+            // -------------------------
             try
             {
                 float cpu = 0f;
@@ -124,7 +160,6 @@ namespace WPFMaster.Services
                 int usedMB = 0, totalMB = 0;
                 float ramPercent = 0f;
 
-                // Cada lectura en su try para que un fallo en una no cancele las demás
                 try
                 {
                     cpu = SystemInfo.GetCpuUsagePercent();
@@ -151,12 +186,12 @@ namespace WPFMaster.Services
                 {
                     Log($"GetDiskUsagePercent error: {ex.Message}");
                 }
-                
+
                 try
                 {
                     var r = SystemInfo.GetRamInfo();
                     ramPercent = r.percentUsed;
-                    usedMB =  Convert.ToInt32(r.usedMB);
+                    usedMB = Convert.ToInt32(r.usedMB);
                     totalMB = Convert.ToInt32(r.totalMB);
                 }
                 catch (Exception ex)
@@ -164,6 +199,9 @@ namespace WPFMaster.Services
                     Log($"GetRamInfo error: {ex.Message}");
                 }
 
+                // -------------------------
+                // 3) Preparar objeto a enviar
+                // -------------------------
                 var info = new PCInfo
                 {
                     PCName = _pcName,
@@ -175,13 +213,18 @@ namespace WPFMaster.Services
                     DiskUsagePercent = disk,
                     IsOnline = true,
                     LastUpdate = DateTime.UtcNow.ToString("o"),
-                    ForbiddenAppOpen = forbiddenAppOpen
+                    ForbiddenAppOpen = forbiddenAppOpen,
+                    // Aquí incluimos la lista concreta de procesos prohibidos abiertos
+                    ForbiddenProcesses = openForbiddenApps
                 };
 
+                // -------------------------
+                // 4) Enviar a Firebase (o tu backend)
+                // -------------------------
                 try
                 {
                     await _firebase.SetMachineAsync(_pcName, info);
-                    Log($"Sent snapshot — CPU:{cpu:0.0}% RAM:{ramPercent:0.0}% Disk:{disk:0.0}%");
+                    Log($"Sent snapshot — CPU:{cpu:0.0}% RAM:{ramPercent:0.0}% Disk:{disk:0.0}% Forbidden:{(forbiddenAppOpen ? string.Join(",", openForbiddenApps) : "none")}");
                 }
                 catch (Exception ex)
                 {
@@ -204,6 +247,25 @@ namespace WPFMaster.Services
                 OnLog?.Invoke(msg);
             }
             catch { /* no hagas fallar el servicio por logging */ }
+        }
+
+        /// <summary>
+        /// Lista negra centralizada. Si luego quieres cargarla desde el servidor, cambia aquí para leer la configuración remota.
+        /// </summary>
+        /// <returns>nombres en minúscula sin extensión (.exe no incluido)</returns>
+        private string[] GetForbiddenList()
+        {
+            return new string[]
+            {
+                "steam",
+                "epicgameslauncher",
+                "roblox",
+                "minecraft",
+                "valorant",
+                "fortnite",
+                "leagueoflegends",
+                "discord"
+            }.Select(s => s.ToLowerInvariant()).ToArray();
         }
 
         #region IDisposable

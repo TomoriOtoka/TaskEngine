@@ -3,7 +3,7 @@ using FireSharp.Response;
 using System;
 using System.Threading.Tasks;
 
-namespace WPFMaster.Services
+namespace TaskEngine.Services
 {
     public class MasterService
     {

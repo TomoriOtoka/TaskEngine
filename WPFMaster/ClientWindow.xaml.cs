@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Windows;
-using WPFMaster.Services;
+using TaskEngine.Services;
 
 // NO AGREGAR using System.Timers;
-namespace WPFMaster
+namespace TaskEngine
 {
     public partial class ClientWindow : Window
     {
