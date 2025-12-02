@@ -37,6 +37,29 @@
                 _timer.Elapsed += async (s, e) => await TimerTickAsync();
             }
 
+            public async Task InitializeAsync()
+            {
+                var existing = await _firebase.GetMachineAsync(_pcName);
+                if (existing == null)
+                {
+                    CurrentNickname = _pcName; // por defecto
+
+                    var info = new PCInfo
+                    {
+                        PCName = _pcName,
+                        Nickname = CurrentNickname,
+                        IsOnline = true
+                    };
+
+                    await _firebase.SetMachineAsync(_pcName, info);
+                }
+                else
+                {
+                    // si ya existe, conserva el nickname guardado
+                    CurrentNickname = existing.Nickname ?? _pcName;
+                }
+            }
+
         /// <summary>
         /// Inicia el envío periódico. Idempotente.
         /// </summary>
@@ -66,7 +89,6 @@
                 var info = new PCInfo
                 {
                     PCName = _pcName,
-                    Nickname = _nickname,
                     CpuUsage = 0,
                     CpuTemperature = 0,
                     RamUsagePercent = 0,
@@ -185,179 +207,142 @@
         {
             CurrentNickname = newNickname;
 
-            try
+            var info = await _firebase.GetMachineAsync(_pcName);
+            if (info != null)
             {
-                var info = await _firebase.GetMachineAsync(_pcName);
-                if (info != null)
-                {
-                    info.Nickname = newNickname;
-                    await _firebase.SetMachineAsync(_pcName, info);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log("Error actualizando nickname: " + ex.Message);
-                throw;
+                info.Nickname = newNickname;
+                await _firebase.SetMachineAsync(_pcName, info);
             }
         }
 
 
         private async Task TimerTickAsync()
+        {
+            // -------------------------
+            // 1) Detectar procesos prohibidos
+            // -------------------------
+            bool forbiddenAppOpen = false;
+            List<string> openForbiddenApps = new List<string>();
+            PCInfo existing = null;
+
+            try
             {
-                // -------------------------
-                // 1) Detectar procesos prohibidos
-                // -------------------------
-                bool forbiddenAppOpen = false;
-                List<string> openForbiddenApps = new List<string>();
+                // Leer info existente desde Firebase
+                existing = await _firebase.GetMachineAsync(_pcName);
+            }
+            catch (Exception ex)
+            {
+                Log("Error leyendo info existente: " + ex.Message);
+            }
 
-                string[] forbidden = GetForbiddenList();
+            string[] forbidden = GetForbiddenList();
 
-                try
+            try
+            {
+                var processes = Process.GetProcesses();
+
+                foreach (var p in processes)
                 {
-                    var processes = Process.GetProcesses();
-
-                    foreach (var p in processes)
+                    try
                     {
-                        try
-                        {
-                            // ProcessName no incluye sufijo .exe, así que trabajamos con nombres sin extension
-                            string name = p.ProcessName.ToLowerInvariant();
+                        string name = p.ProcessName.ToLowerInvariant();
 
-                            foreach (var f in forbidden)
+                        foreach (var f in forbidden)
+                        {
+                            if (name == f || name.StartsWith(f))
                             {
-                                // Coincidencia exacta o inicio del nombre evita la mayoría de falsos positivos.
-                                if (name == f || name.StartsWith(f))
-                                {
-                                    openForbiddenApps.Add(name);
-                                    break;
-                                }
+                                openForbiddenApps.Add(name);
+                                break;
                             }
                         }
-                        catch
-                        {
-                            // Ignorar procesos que no se puedan leer
-                        }
                     }
-
-                    // Eliminamos duplicados y normalizamos
-                    openForbiddenApps = openForbiddenApps.Distinct().ToList();
-                    forbiddenAppOpen = openForbiddenApps.Count > 0;
+                    catch { /* ignorar procesos inaccesibles */ }
                 }
-                catch (Exception ex)
+
+                openForbiddenApps = openForbiddenApps.Distinct().ToList();
+                forbiddenAppOpen = openForbiddenApps.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                Log($"Process scan failed: {ex.Message}");
+            }
+
+            // -------------------------
+            // 2) Leer métricas del sistema
+            // -------------------------
+            float cpu = 0f;
+            float temp = 0f;
+            float disk = 0f;
+            int usedMB = 0, totalMB = 0;
+            float ramPercent = 0f;
+
+            try { cpu = SystemInfo.GetCpuUsagePercent(); } catch { }
+            try { temp = SystemInfo.GetCpuTemperature(); } catch { }
+            try { disk = SystemInfo.GetDiskUsagePercent("C"); } catch { }
+            try
+            {
+                var r = SystemInfo.GetRamInfo();
+                ramPercent = r.percentUsed;
+                usedMB = Convert.ToInt32(r.usedMB);
+                totalMB = Convert.ToInt32(r.totalMB);
+            }
+            catch { }
+
+            // -------------------------
+            // 3) Preparar objeto a enviar
+            // -------------------------
+                var info = new PCInfo
                 {
-                    Log($"Process scan failed: {ex.Message}");
-                }
+                    PCName = _pcName,
+                    CpuUsage = cpu,
+                    CpuTemperature = temp,
+                    RamUsagePercent = ramPercent,
+                    TotalRamMB = totalMB,
+                    UsedRamMB = usedMB,
+                    DiskUsagePercent = disk,
+                    IsOnline = true,
+                    LastUpdate = DateTime.UtcNow.ToString("o"),
+                    ForbiddenAppOpen = forbiddenAppOpen,
+                    ForbiddenProcesses = openForbiddenApps,
+                    // ✅ Conservar el nickname existente si ya hay, si no usar _pcName
+                    Nickname = CurrentNickname
+                };
 
-                // -------------------------
-                // 2) Leer métricas (CPU, temp, RAM, disco) — cada lectura en su try
-                // -------------------------
-                try
+            // -------------------------
+            // 4) Enviar a Firebase
+            // -------------------------
+            try
+            {
+                await _firebase.SetMachineAsync(_pcName, info);
+                Log($"Sent snapshot — CPU:{cpu:0.0}% RAM:{ramPercent:0.0}% Disk:{disk:0.0}% Forbidden:{(forbiddenAppOpen ? string.Join(",", openForbiddenApps) : "none")} Nickname:{info.Nickname}");
+            }
+            catch (Exception ex)
+            {
+                Log($"Firebase.SetMachineAsync error: {ex.Message}");
+            }
+
+            // -------------------------
+            // 5) Revisar comandos remotos
+            // -------------------------
+            try
+            {
+                var cmd = await _firebase.GetClientCommandAsync(_pcName);
+                if (!string.IsNullOrEmpty(cmd))
                 {
-                    float cpu = 0f;
-                    float temp = 0f;
-                    float disk = 0f;
-                    int usedMB = 0, totalMB = 0;
-                    float ramPercent = 0f;
-
-                    try
+                    Log($"Received command: {cmd}");
+                    if (cmd == "KILL_FORBIDDEN")
                     {
-                        cpu = SystemInfo.GetCpuUsagePercent();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"GetCpuUsagePercent error: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        temp = SystemInfo.GetCpuTemperature();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"GetCpuTemperature error: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        disk = SystemInfo.GetDiskUsagePercent("C");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"GetDiskUsagePercent error: {ex.Message}");
-                    }
-
-                    try
-                    {
-                        var r = SystemInfo.GetRamInfo();
-                        ramPercent = r.percentUsed;
-                        usedMB = Convert.ToInt32(r.usedMB);
-                        totalMB = Convert.ToInt32(r.totalMB);
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"GetRamInfo error: {ex.Message}");
-                    }
-
-                    // -------------------------
-                    // 3) Preparar objeto a enviar
-                    // -------------------------
-                    var info = new PCInfo
-                    {
-                        PCName = _pcName,
-                        CpuUsage = cpu,
-                        CpuTemperature = temp,
-                        RamUsagePercent = ramPercent,
-                        TotalRamMB = totalMB,
-                        UsedRamMB = usedMB,
-                        DiskUsagePercent = disk,
-                        IsOnline = true,
-                        LastUpdate = DateTime.UtcNow.ToString("o"),
-                        ForbiddenAppOpen = forbiddenAppOpen,
-                        // Aquí incluimos la lista concreta de procesos prohibidos abiertos
-                        ForbiddenProcesses = openForbiddenApps,
-                        Nickname = _nickname // usar el campo privado
-
-                    };
-
-                    // -------------------------
-                    // 4) Enviar a Firebase (o tu backend)
-                    // -------------------------
-                    try
-                    {
-                        await _firebase.SetMachineAsync(_pcName, info);
-                        Log($"Sent snapshot — CPU:{cpu:0.0}% RAM:{ramPercent:0.0}% Disk:{disk:0.0}% Forbidden:{(forbiddenAppOpen ? string.Join(",", openForbiddenApps) : "none")}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"Firebase.SetMachineAsync error: {ex.Message}");
+                        KillForbiddenProcesses();
+                        await _firebase.SendClientCommandAsync(_pcName, null);
                     }
                 }
-                catch (Exception exOuter)
-                {
-                    // Nunca permitir que una excepción no controlada detenga el timer
-                    Log($"Unhandled error in TimerTickAsync: {exOuter}");
-                }
-
-                try
-                {
-                    var cmd = await _firebase.GetClientCommandAsync(_pcName); // implementa GetClientCommandAsync
-                    if (!string.IsNullOrEmpty(cmd))
-                    {
-                        Log($"Received command: {cmd}");
-                        if (cmd == "KILL_FORBIDDEN")
-                        {
-                            KillForbiddenProcesses();
-                            // limpiar comando
-                            await _firebase.SendClientCommandAsync(_pcName, null);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log("Error checking commands: " + ex.Message);
-                }
-
+            }
+            catch (Exception ex)
+            {
+                Log("Error checking commands: " + ex.Message);
+            }
         }
+
 
         private void Log(string text)
             {

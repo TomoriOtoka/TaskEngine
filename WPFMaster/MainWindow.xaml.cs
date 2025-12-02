@@ -326,7 +326,7 @@ namespace TaskEngine
                             }
                             pcControls.OnlineText.Text = isOnline ? "ONLINE" : "OFFLINE";
                             pcControls.OnlineText.Foreground = isOnline ? Brushes.Green : Brushes.Red;
-                            pcControls.NicknameText.Text = string.IsNullOrEmpty(pc.Nickname) ? "Sin apodo" : pc.Nickname;
+                            pcControls.NicknameText.Text = pc.Nickname ?? pc.PCName;
 
 
 
