@@ -1,26 +1,27 @@
-﻿using System;
+﻿using LibreHardwareMonitor.Hardware.Motherboard;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Runtime.InteropServices;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
+using System.Windows.Threading;
 using TaskEngine.Models;
 using TaskEngine.Services;
 using TaskEngine.Utils;
-using Timer = System.Timers.Timer;
-using Button = System.Windows.Controls.Button;
 using Brushes = System.Windows.Media.Brushes;
+using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
 using MessageBox = System.Windows.MessageBox;
 using Point = System.Windows.Point;
+using Timer = System.Timers.Timer;
 using WpfProgressBar = System.Windows.Controls.ProgressBar;
 
 namespace TaskEngine
@@ -47,49 +48,9 @@ namespace TaskEngine
             FlashWindow(this, 10);
 
             TitleBlock.Text = $"MASTER: {machineName}";
-            _ = RegisterMasterAsync();
             StartRefreshLoop();
 
-            // Opcional: iniciar ClientService (esto hace que esta misma app tambien envíe su snapshot)
-            try
-            {
-                _clientService = new ClientService(3000);
-                _clientService.OnLog += msg => Console.WriteLine(msg);
-                _clientService.Start();
-            }
-            catch
-            {
-                // no fallar si algo pasa con cliente
-            }
-
         }
-
-        private async Task RegisterMasterAsync()
-        {
-            try
-            {
-                var info = new PCInfo
-                {
-                    PCName = machineName,
-                    CpuUsage = 0,
-                    CpuTemperature = 0,
-                    RamUsagePercent = 0,
-                    TotalRamMB = 0,
-                    UsedRamMB = 0,
-                    DiskUsagePercent = 0,
-                    IsOnline = true,
-                    LastUpdate = DateTime.UtcNow.ToString("o")
-                };
-
-                await firebase.SetMachineAsync(machineName, info);
-            }
-            catch (Exception ex)
-            {
-                Dispatcher.Invoke(() =>
-                    MessageBox.Show("Error registrando MASTER: " + ex.Message));
-            }
-        }
-
         private void StartRefreshLoop()
         {
             refreshTimer = new Timer(3000);
@@ -149,25 +110,6 @@ namespace TaskEngine
         {
             try
             {
-                float cpu = SystemInfo.GetCpuUsagePercent();
-                float temp = SystemInfo.GetCpuTemperature();
-                float disk = SystemInfo.GetDiskUsagePercent("C");
-                var ram = SystemInfo.GetRamInfo();
-
-                var myInfo = new PCInfo
-                {
-                    PCName = machineName,
-                    CpuUsage = cpu,
-                    CpuTemperature = temp,
-                    RamUsagePercent = ram.percentUsed,
-                    TotalRamMB = ram.totalMB,
-                    UsedRamMB = ram.usedMB,
-                    DiskUsagePercent = disk,
-                    IsOnline = true,
-                    LastUpdate = DateTime.UtcNow.ToString("o")
-                };
-
-                await firebase.SetMachineAsync(machineName, myInfo);
 
                 var machines = await firebase.GetAllMachinesAsync();
                 if (machines == null)
@@ -318,41 +260,71 @@ namespace TaskEngine
                         // --- ACTUALIZAR DATOS ---
                         var pcControls = _pcControls[pc.PCName];
 
-                            bool isOnline = false;
-                            if (!string.IsNullOrEmpty(pc.LastUpdate) &&
-                                DateTime.TryParse(pc.LastUpdate, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime lastUpdate))
-                            {
-                                isOnline = (DateTime.UtcNow - lastUpdate).TotalSeconds <= 15 && pc.IsOnline;
-                            }
-                            pcControls.OnlineText.Text = isOnline ? "ONLINE" : "OFFLINE";
-                            pcControls.OnlineText.Foreground = isOnline ? Brushes.Green : Brushes.Red;
-                            pcControls.NicknameText.Text = pc.Nickname ?? pc.PCName;
+                        // --- 1. ESTADO ONLINE / OFFLINE ---
+                        bool isOnline = IsPCOnline(pc);
+                        bool clockIssue = HasClockIssue(pc);
+
+                        // Mostrar estado visual
+                        pcControls.OnlineText.Text = isOnline ? "ONLINE" : "OFFLINE";
+                        pcControls.OnlineText.Foreground = isOnline ? Brushes.Green : Brushes.Red;
+
+                        pcControls.NicknameText.Text = pc.Nickname ?? pc.PCName;
 
 
+                        // --- 2. MANEJO DE CASOS ESPECIALES ---
 
-                        bool hasForbidden = pc.ForbiddenProcesses != null && pc.ForbiddenProcesses.Count > 0;
-                            pcControls.ForbiddenText.Text = hasForbidden ? string.Join("\n", pc.ForbiddenProcesses) : "";
-                            pcControls.KillForbiddenButton.IsEnabled = hasForbidden;
-                            pcControls.ForbiddenScroll.Visibility = Visibility.Visible; // siempre visible
-
-                            pcControls.Card.Background = hasForbidden
-                                ? new SolidColorBrush(Color.FromRgb(255, 230, 230))
-                                : new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1));
-                            pcControls.Card.BorderBrush = hasForbidden
-                                ? new SolidColorBrush(Color.FromRgb(220, 50, 50))
-                                : new SolidColorBrush(Color.FromRgb(220, 220, 220));
-
-                            // Actualizar valores de los demás controles
-                            pcControls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
-                            pcControls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
-                            pcControls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
-                            pcControls.RamText.Text = $"RAM: {pc.RamUsagePercent}% ({pc.UsedRamMB}/{pc.TotalRamMB} MB)";
-                            pcControls.DiskText.Text = $"DISCO: {pc.DiskUsagePercent}%";
-
-                            AnimateProgressBar(pcControls.CpuBar, pc.CpuUsage);
-                            AnimateProgressBar(pcControls.RamBar, pc.RamUsagePercent);
-                            AnimateProgressBar(pcControls.DiskBar, pc.DiskUsagePercent);
+                        // A) Error de hora → enviar aviso pero NO marcar como offline
+                        if (clockIssue)
+                        {
+                            ShowToast("Error de hora", $"{pc.PCName}: Reloj del sistema incorrecto. Verifique fecha y hora.", "clock_issue");
                         }
+
+                        // B) Está offline pero aún envía señales → problema común de hora
+                        if (!isOnline && pc.IsOnline && !clockIssue)
+                        {
+                            ShowToast("Error", $"{pc.PCName}: Detectada como offline, pero envía datos. Posible error de hora.", "pffline_issue");
+                        }
+
+
+                        // --- 3. APPS PROHIBIDAS ---
+                        // Si la PC está offline → NO mostrar apps prohibidas
+                        bool hasForbidden = pc.ForbiddenProcesses != null &&
+                                            pc.ForbiddenProcesses.Count > 0 &&
+                                            isOnline; // ← ESTA LÍNEA DESACTIVA apps prohibidas si está OFFLINE
+
+                        pcControls.ForbiddenText.Text =
+                            hasForbidden ? string.Join("\n", pc.ForbiddenProcesses) : "";
+
+                        pcControls.KillForbiddenButton.IsEnabled = hasForbidden;
+
+                        // Mantener visible el contenedor, pero vacío si no hay apps
+                        pcControls.ForbiddenScroll.Visibility = Visibility.Visible;
+
+
+                        // Colores de tarjeta
+                        pcControls.Card.Background = hasForbidden
+                            ? new SolidColorBrush(Color.FromRgb(255, 230, 230))
+                            : new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255),
+                                                      new Point(0, 0), new Point(0, 1));
+
+                        pcControls.Card.BorderBrush = hasForbidden
+                            ? new SolidColorBrush(Color.FromRgb(220, 50, 50))
+                            : new SolidColorBrush(Color.FromRgb(220, 220, 220));
+
+
+                        // --- 4. DATOS DEL SISTEMA ---
+                        pcControls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
+                        pcControls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
+                        pcControls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
+                        pcControls.RamText.Text = $"RAM: {pc.RamUsagePercent}% ({pc.UsedRamMB}/{pc.TotalRamMB} MB)";
+                        pcControls.DiskText.Text = $"DISCO: {pc.DiskUsagePercent}%";
+
+                        AnimateProgressBar(pcControls.CpuBar, pc.CpuUsage);
+                        AnimateProgressBar(pcControls.RamBar, pc.RamUsagePercent);
+                        AnimateProgressBar(pcControls.DiskBar, pc.DiskUsagePercent);
+
+
+                    }
 
                     StatusBlock.Text = $"Última actualización: {DateTime.Now:HH:mm:ss}";
                 });
@@ -389,7 +361,7 @@ namespace TaskEngine
 
         protected override void OnClosed(EventArgs e)
         {
-            try { _clientService?.Dispose(); refreshTimer?.Stop(); refreshTimer?.Dispose(); } catch { }
+            
             base.OnClosed(e);
         }
 
@@ -440,6 +412,37 @@ namespace TaskEngine
                 }
             }
         }
+
+        private bool IsPCOnline(PCInfo pc)
+        {
+            if (string.IsNullOrEmpty(pc.LastUpdate))
+                return false;
+
+            if (!DateTime.TryParse(pc.LastUpdate, null,
+                System.Globalization.DateTimeStyles.RoundtripKind,
+                out DateTime lastUpdate))
+                return false;
+
+            // Si no actualiza en 15s, está offline
+            bool withinTime = (DateTime.UtcNow - lastUpdate).TotalSeconds <= 15;
+
+            return withinTime && pc.IsOnline;
+        }
+
+        private bool HasClockIssue(PCInfo pc)
+        {
+            if (!DateTime.TryParse(pc.LastUpdate, null,
+                System.Globalization.DateTimeStyles.RoundtripKind, out DateTime lastUpdate))
+                return false;
+
+            if(pc.IsOnline) return true;
+
+            // Si la diferencia entre la hora de la PC y la hora real es absurda
+            var diff = Math.Abs((DateTime.UtcNow - lastUpdate).TotalHours);
+
+            return diff > 2; // más de 2 horas de diferencia → problema de reloj
+        }
+
 
 
         // ==================== TOASTS CASEROS ====================

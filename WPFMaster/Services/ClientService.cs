@@ -218,61 +218,38 @@
 
         private async Task TimerTickAsync()
         {
-            // -------------------------
-            // 1) Detectar procesos prohibidos
-            // -------------------------
             bool forbiddenAppOpen = false;
             List<string> openForbiddenApps = new List<string>();
             PCInfo existing = null;
+            var now = DateTime.UtcNow;
 
-            try
-            {
-                // Leer info existente desde Firebase
-                existing = await _firebase.GetMachineAsync(_pcName);
-            }
-            catch (Exception ex)
-            {
-                Log("Error leyendo info existente: " + ex.Message);
-            }
+            // --- leer registro actual ---
+            try { existing = await _firebase.GetMachineAsync(_pcName); } catch { }
 
+            // --- detectar apps prohibidas ---
             string[] forbidden = GetForbiddenList();
-
             try
             {
                 var processes = Process.GetProcesses();
-
                 foreach (var p in processes)
                 {
                     try
                     {
                         string name = p.ProcessName.ToLowerInvariant();
-
-                        foreach (var f in forbidden)
-                        {
-                            if (name == f || name.StartsWith(f))
-                            {
-                                openForbiddenApps.Add(name);
-                                break;
-                            }
-                        }
+                        if (forbidden.Any(f => name == f || name.StartsWith(f)))
+                            openForbiddenApps.Add(name);
                     }
-                    catch { /* ignorar procesos inaccesibles */ }
+                    catch { }
                 }
 
                 openForbiddenApps = openForbiddenApps.Distinct().ToList();
                 forbiddenAppOpen = openForbiddenApps.Count > 0;
             }
-            catch (Exception ex)
-            {
-                Log($"Process scan failed: {ex.Message}");
-            }
+            catch { }
 
-            // -------------------------
-            // 2) Leer métricas del sistema
-            // -------------------------
-            float cpu = 0f;
-            float temp = 0f;
-            float disk = 0f;
+
+            // --- métricas del sistema ---
+            float cpu = 0f, temp = 0f, disk = 0f;
             int usedMB = 0, totalMB = 0;
             float ramPercent = 0f;
 
@@ -288,42 +265,42 @@
             }
             catch { }
 
-            // -------------------------
-            // 3) Preparar objeto a enviar
-            // -------------------------
-                var info = new PCInfo
-                {
-                    PCName = _pcName,
-                    CpuUsage = cpu,
-                    CpuTemperature = temp,
-                    RamUsagePercent = ramPercent,
-                    TotalRamMB = totalMB,
-                    UsedRamMB = usedMB,
-                    DiskUsagePercent = disk,
-                    IsOnline = true,
-                    LastUpdate = DateTime.UtcNow.ToString("o"),
-                    ForbiddenAppOpen = forbiddenAppOpen,
-                    ForbiddenProcesses = openForbiddenApps,
-                    // ✅ Conservar el nickname existente si ya hay, si no usar _pcName
-                    Nickname = CurrentNickname
-                };
-
-            // -------------------------
-            // 4) Enviar a Firebase
-            // -------------------------
+            // --- detectar reloj incorrecto ---
+            bool badClock = false;
             try
             {
-                await _firebase.SetMachineAsync(_pcName, info);
-                Log($"Sent snapshot — CPU:{cpu:0.0}% RAM:{ramPercent:0.0}% Disk:{disk:0.0}% Forbidden:{(forbiddenAppOpen ? string.Join(",", openForbiddenApps) : "none")} Nickname:{info.Nickname}");
+                var diff = Math.Abs((DateTime.Now - DateTime.UtcNow).TotalMinutes);
+                badClock = diff > 5;
             }
-            catch (Exception ex)
-            {
-                Log($"Firebase.SetMachineAsync error: {ex.Message}");
-            }
+            catch { }
 
-            // -------------------------
-            // 5) Revisar comandos remotos
-            // -------------------------
+
+            // --- construir paquete ---
+            var info = new PCInfo
+            {
+                PCName = _pcName,
+                CpuUsage = cpu,
+                CpuTemperature = temp,
+                RamUsagePercent = ramPercent,
+                TotalRamMB = totalMB,
+                UsedRamMB = usedMB,
+                DiskUsagePercent = disk,
+                IsOnline = true,
+                LastUpdate = DateTime.UtcNow.ToString("o"),
+                Heartbeat = DateTime.UtcNow.ToString("o"),
+                ForbiddenAppOpen = forbiddenAppOpen,
+                ForbiddenProcesses = openForbiddenApps,
+                DataValid = (cpu >= 0 && ramPercent >= 0 && disk >= 0),
+                ClockIssue = badClock,
+                LastUpdateTime = now,
+                Nickname = CurrentNickname
+            };
+
+            // enviar a Firebase
+            try { await _firebase.SetMachineAsync(_pcName, info); }
+            catch (Exception ex) { Log($"Firebase error: {ex.Message}"); }
+
+            // revisar comandos
             try
             {
                 var cmd = await _firebase.GetClientCommandAsync(_pcName);
@@ -337,12 +314,8 @@
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Log("Error checking commands: " + ex.Message);
-            }
+            catch { }
         }
-
 
         private void Log(string text)
             {

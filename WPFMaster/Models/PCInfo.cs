@@ -13,8 +13,11 @@
         public string LastUpdate { get; set; }       // ISO timestamp
         public bool ForbiddenAppOpen { get; set; } = false; // Si esta usando una aplicación prohibida
         public List<string> ForbiddenProcesses { get; set; } = new List<string>();
-
+        public bool DataValid { get; set; } = true; // indica si se pudieron leer métricas
+        public DateTime LastUpdateTime { get; set; } = DateTime.UtcNow;
         public string Nickname { get; set; } = "";
+        public bool ClockIssue { get; set; }
+        public string Heartbeat { get; set; } = "";
 
     }
 }
