@@ -270,19 +270,16 @@ namespace TaskEngine
 
                         pcControls.NicknameText.Text = pc.Nickname ?? pc.PCName;
 
-
-                        // --- 2. MANEJO DE CASOS ESPECIALES ---
-
                         // A) Error de hora → enviar aviso pero NO marcar como offline
                         if (clockIssue)
                         {
-                            ShowToast("Error de hora", $"{pc.PCName}: Reloj del sistema incorrecto. Verifique fecha y hora.", "clock_issue");
+                            ShowToast("Error de hora", $"{pc.PCName}: Reloj del sistema incorrecto. Verifique fecha y hora. Envía datos pero sale como offline.", "clock_issue");
                         }
 
                         // B) Está offline pero aún envía señales → problema común de hora
                         if (!isOnline && pc.IsOnline && !clockIssue)
                         {
-                            ShowToast("Error", $"{pc.PCName}: Detectada como offline, pero envía datos. Posible error de hora.", "pffline_issue");
+                            ShowToast("Error", $"{pc.PCName}: Detectada como offline, pero envía datos. Posible error de hora.", "offline_issue");
                         }
 
 
@@ -431,17 +428,22 @@ namespace TaskEngine
 
         private bool HasClockIssue(PCInfo pc)
         {
+            if (string.IsNullOrWhiteSpace(pc.LastUpdate))
+                return false;
+
             if (!DateTime.TryParse(pc.LastUpdate, null,
                 System.Globalization.DateTimeStyles.RoundtripKind, out DateTime lastUpdate))
                 return false;
 
-            if(pc.IsOnline) return true;
+            double diffHours = Math.Abs((DateTime.UtcNow - lastUpdate).TotalHours);
 
-            // Si la diferencia entre la hora de la PC y la hora real es absurda
-            var diff = Math.Abs((DateTime.UtcNow - lastUpdate).TotalHours);
+            // Solo marcar error si dice estar online
+            if (!pc.IsOnline)
+                return false;
 
-            return diff > 2; // más de 2 horas de diferencia → problema de reloj
+            return diffHours > 2;
         }
+
 
 
 

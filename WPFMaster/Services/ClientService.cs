@@ -69,14 +69,14 @@
             if (_timer.Enabled) return;
 
             _ = RegisterIfFirstTimeAsync();
-            _ = InitializeNicknameAsync(); // lee o crea el nickname
-            _timer.Start();
-            _ = TimerTickAsync(); // primera actualización inmediata
+            _ = InitializeNicknameAsync();
 
             Log($"ClientService starting (interval {_timer.Interval}ms) for {_pcName}");
-            _timer.Start();
-            _ = TimerTickAsync(); // primera actualización inmediata
+
+            _ = TimerTickAsync(); // una sola actualización inmediata
+            _timer.Start();       // y luego intervalos normales
         }
+        
 
       
 
