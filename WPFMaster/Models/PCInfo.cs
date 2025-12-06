@@ -1,4 +1,6 @@
-﻿namespace TaskEngine.Models
+﻿using System.Security.Permissions;
+
+namespace TaskEngine.Models
 {
     public class PCInfo
     {
@@ -15,6 +17,8 @@
         public List<string> ForbiddenProcesses { get; set; } = new List<string>();
         public bool DataValid { get; set; } = true; // indica si se pudieron leer métricas
         public DateTime LastUpdateTime { get; set; } = DateTime.UtcNow;
+        public bool IsClassMode { get; set; }
+        public string Group { get; set; } = "Sin grupo";
         public string Nickname { get; set; } = "";
         public bool ClockIssue { get; set; }
         public string Heartbeat { get; set; } = "";

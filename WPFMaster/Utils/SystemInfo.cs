@@ -13,7 +13,7 @@ namespace TaskEngine.Utils
         private static readonly PerformanceCounter cpuCounter =
             new PerformanceCounter("Processor", "% Processor Time", "_Total");
 
-        // Reutilizamos instancia para evitar abrir/cerrar hardware cada vez
+        
         private static readonly Computer computer = new Computer
         {
             IsCpuEnabled = true,
@@ -129,7 +129,7 @@ namespace TaskEngine.Utils
                 long free = di.AvailableFreeSpace;
                 long used = total - free;
 
-                float p = (used / (float)total) * 100f;
+                float p = (used / (float)total) * 100f; 
                 return (float)Math.Round(p, 1);
             }
             catch { return 0; }
