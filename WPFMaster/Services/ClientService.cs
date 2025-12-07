@@ -15,24 +15,34 @@ namespace TaskEngine.Services
         private readonly FirebaseService _firebase;
         private readonly string _pcName;
         private readonly Timer _timer;
+        private readonly Timer _cleanupTimer;
+
         public string CurrentNickname { get; set; }
-
         private bool _disposed;
-        private string _nickname;
 
-
-        
         public event Action<string> OnLog;
 
-        /// <summary>
-        /// Intervalo en ms por defecto 3000 ms (3s). 
-        /// </summary>
-        public ClientService(double intervalMs = 3000)
+        private const int HISTORY_SAVE_INTERVAL_SECONDS = 60 * 30;
+        private const int CLEANUP_INTERVAL_MINUTES = 60;
+        private const int HISTORY_RETENTION_MINUTES = 1440 * 7;
+
+        private DateTime _lastHistorySave = DateTime.MinValue;
+
+        public ClientService(double intervalMs = 1800000) // 30 min
         {
             _firebase = new FirebaseService();
             _pcName = Environment.MachineName;
+
+            // Temporizador principal (métricas)
             _timer = new Timer(intervalMs) { AutoReset = true };
             _timer.Elapsed += async (s, e) => await TimerTickAsync();
+
+            // Temporizador de limpieza
+            _cleanupTimer = new Timer(TimeSpan.FromMinutes(CLEANUP_INTERVAL_MINUTES).TotalMilliseconds)
+            {
+                AutoReset = true
+            };
+            _cleanupTimer.Elapsed += async (s, e) => await CleanupHistoryAsync();
         }
 
         public async Task InitializeAsync()
@@ -40,27 +50,23 @@ namespace TaskEngine.Services
             var existing = await _firebase.GetMachineAsync(_pcName);
             if (existing == null)
             {
-                CurrentNickname = _pcName; // por defecto
-
+                CurrentNickname = _pcName;
                 var info = new PCInfo
                 {
                     PCName = _pcName,
                     Nickname = CurrentNickname,
-                    IsOnline = true
+                    IsOnline = true,
+                    LastUpdate = DateTime.UtcNow.ToString("o"),
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
-
-                await _firebase.SetMachineAsync(_pcName, info);
+                await _firebase.SetMachineAsync(_pcName, info); // ✅ Solo "current"
             }
             else
             {
-                // si ya existe, conserva el nickname guardado
                 CurrentNickname = existing.Nickname ?? _pcName;
             }
         }
 
-        /// <summary>
-        /// Inicia el envío periódico. Idempotente.
-        /// </summary>
         public void Start()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(ClientService));
@@ -70,9 +76,18 @@ namespace TaskEngine.Services
             _ = InitializeNicknameAsync();
 
             Log($"ClientService starting (interval {_timer.Interval}ms) for {_pcName}");
+            _ = TimerTickAsync();
+            _timer.Start();
+            _cleanupTimer.Start();
+        }
 
-            _ = TimerTickAsync(); // una sola actualización inmediata
-            _timer.Start();      
+        public void Stop()
+        {
+            if (_disposed) return;
+            if (!_timer.Enabled) return;
+            _timer.Stop();
+            _cleanupTimer.Stop();
+            Log("ClientService stopped");
         }
 
         private async Task RegisterIfFirstTimeAsync()
@@ -80,7 +95,6 @@ namespace TaskEngine.Services
             var existing = await _firebase.GetMachineAsync(_pcName);
             if (existing == null)
             {
-                _nickname = _pcName; // por defecto
                 var info = new PCInfo
                 {
                     PCName = _pcName,
@@ -91,68 +105,11 @@ namespace TaskEngine.Services
                     UsedRamMB = 0,
                     DiskUsagePercent = 0,
                     IsOnline = true,
-                    LastUpdate = DateTime.UtcNow.ToString("o")
+                    LastUpdate = DateTime.UtcNow.ToString("o"),
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    Nickname = _pcName
                 };
-
                 await _firebase.SetMachineAsync(_pcName, info);
-            }
-            else
-            {
-                _nickname = existing.Nickname;
-            }
-
-        }
-        /// <summary>
-        /// Para el envío periódico.
-        /// </summary>
-        public void Stop()
-        {
-            if (_disposed) return;
-            if (!_timer.Enabled) return;
-            _timer.Stop();
-            Log("ClientService stopped");
-        }
-
-        /// <summary>
-        /// Método público para forzar un envío (por ejemplo desde el UI).
-        /// </summary>
-        public Task SendSnapshotAsync() => TimerTickAsync();
-
-        /// <summary>
-        /// Mata procesos de la lista negra que estén corriendo).
-        /// Público para que el Master pueda pedir esto remotamente.
-        /// </summary>
-        public void KillForbiddenProcesses()
-        {
-            string[] forbidden = GetForbiddenList();
-
-            try
-            {
-                var processes = Process.GetProcesses();
-                foreach (var p in processes)
-                {
-                    try
-                    {
-                        var name = p.ProcessName.ToLowerInvariant();
-                        if (forbidden.Any(f => name == f || name.StartsWith(f)))
-                        {
-                            try
-                            {
-                                Log($"Killing process {name} (pid {p.Id})");
-                                p.Kill(true);
-                            }
-                            catch (Exception exKill)
-                            {
-                                Log($"Failed to kill {name}: {exKill.Message}");
-                            }
-                        }
-                    }
-                    catch { /* ignore individual process access errors */ }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log($"KillForbiddenProcesses failed: {ex.Message}");
             }
         }
 
@@ -160,31 +117,11 @@ namespace TaskEngine.Services
         {
             try
             {
-                var existing = await _firebase.GetMachineAsync(_pcName); // intenta leer de Firebase
-
+                var existing = await _firebase.GetMachineAsync(_pcName);
                 if (existing != null && !string.IsNullOrWhiteSpace(existing.Nickname))
-                {
-                    CurrentNickname = existing.Nickname; // conserva nickname existente
-                }
+                    CurrentNickname = existing.Nickname;
                 else
-                {
-                    CurrentNickname = _pcName; // por defecto
-                                               // crea registro inicial
-                    var info = new PCInfo
-                    {
-                        PCName = _pcName,
-                        CpuUsage = 0,
-                        CpuTemperature = 0,
-                        RamUsagePercent = 0,
-                        TotalRamMB = 0,
-                        UsedRamMB = 0,
-                        DiskUsagePercent = 0,
-                        IsOnline = true,
-                        LastUpdate = DateTime.UtcNow.ToString("o"),
-                        Nickname = CurrentNickname
-                    };
-                    await _firebase.SetMachineAsync(_pcName, info);
-                }
+                    CurrentNickname = _pcName;
             }
             catch (Exception ex)
             {
@@ -193,70 +130,17 @@ namespace TaskEngine.Services
             }
         }
 
-
-        /// <summary>
-        /// Lógica que se ejecuta en cada tick. Maneja fallos parciales y siempre intenta enviar lo que pueda.
-        /// </summary>
-        /// 
-        public async Task UpdateNicknameAsync(string newNickname)
+        private async Task CleanupHistoryAsync()
         {
-            CurrentNickname = newNickname;
-
-            var info = await _firebase.GetMachineAsync(_pcName);
-            if (info != null)
-            {
-                info.Nickname = newNickname;
-                await _firebase.SetMachineAsync(_pcName, info);
-            }
+            if (string.IsNullOrWhiteSpace(_pcName)) return;
+            await _firebase.CleanOldHistoryAsync(_pcName, TimeSpan.FromMinutes(HISTORY_RETENTION_MINUTES));
         }
-
-        private DateTime _lastHistorySave = DateTime.MinValue;
 
         private async Task TimerTickAsync()
         {
-            List<string> openForbiddenApps = new List<string>();
             var now = DateTime.UtcNow;
 
-            // --- Leer registro actual de Firebase (incluye IsClassMode) ---
-            PCInfo existing = null;
-            try
-            {
-                existing = await _firebase.GetMachineAsync(_pcName);
-            }
-            catch
-            {
-                Log("Failed to read existing PC info from Firebase");
-            }
-
-            string currentGroup = existing?.Group;
-            bool isClassMode = existing?.IsClassMode == true;
-
-            // --- Detectar apps prohibidas ---
-            string[] forbidden = GetForbiddenList();
-            try
-            {
-                var processes = Process.GetProcesses();
-                foreach (var p in processes)
-                {
-                    try
-                    {
-                        string name = p.ProcessName.ToLowerInvariant();
-                        if (forbidden.Any(f => name == f || name.StartsWith(f)))
-                            openForbiddenApps.Add(name);
-                    }
-                    catch { }
-                }
-                openForbiddenApps = openForbiddenApps.Distinct().ToList();
-            }
-            catch { }
-
-            // --- MODO CLASE: Bloquear apps en tiempo real ---
-            if (isClassMode)
-            {
-                KillForbiddenProcesses();
-            }
-
-            // --- Métricas del sistema ---
+            // --- Recoger métricas ---
             float cpu = 0f, temp = 0f, disk = 0f;
             int usedMB = 0, totalMB = 0;
             float ramPercent = 0f;
@@ -273,7 +157,6 @@ namespace TaskEngine.Services
             }
             catch { }
 
-            // --- Construir paquete principal ---
             var info = new PCInfo
             {
                 PCName = _pcName,
@@ -284,83 +167,24 @@ namespace TaskEngine.Services
                 UsedRamMB = usedMB,
                 DiskUsagePercent = disk,
                 IsOnline = true,
-                LastUpdate = DateTime.UtcNow.ToString("o"),
-                ForbiddenAppOpen = openForbiddenApps.Count > 0,
-                ForbiddenProcesses = openForbiddenApps,
-                DataValid = (cpu >= 0 && ramPercent >= 0 && disk >= 0),
-                Nickname = CurrentNickname,
-                IsClassMode = isClassMode,
-                Group = currentGroup,
+                LastUpdate = now.ToString("o"),
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                Nickname = CurrentNickname
             };
 
-            // --- Enviar a Firebase en la ruta principal (tiempo real) ---
-            try
-            {
-                await _firebase.SetMachineAsync(_pcName, info);
-            }
-            catch (Exception ex)
-            {
-                Log($"Firebase error: {ex.Message}");
-            }
+            // --- Guardar estado actual ---
+            try { await _firebase.SetMachineAsync(_pcName, info); }
+            catch (Exception ex) { Log($"Firebase error (main): {ex.Message}"); }
 
-            // --- GUARDAR HISTORIAL solo cada hora ---
-            if ((now - _lastHistorySave).TotalHours >= 1)
+            // --- Guardar historial ---
+            if ((now - _lastHistorySave).TotalSeconds >= HISTORY_SAVE_INTERVAL_SECONDS)
             {
                 _lastHistorySave = now;
-
-                try
-                {
-                    var historyEntry = new PCInfo
-                    {
-                        PCName = _pcName,
-                        CpuUsage = cpu,
-                        CpuTemperature = temp,
-                        RamUsagePercent = ramPercent,
-                        UsedRamMB = usedMB,
-                        TotalRamMB = totalMB,
-                        DiskUsagePercent = disk,
-                        LastUpdate = DateTime.UtcNow.ToString("o"),
-                        Group = currentGroup,
-                        IsClassMode = isClassMode
-                    };
-
-                    string timestampKey = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-                    string historyPath = $"machines/{_pcName}/history/{timestampKey}";
-                    await _firebase.SetMachineAtPathAsync(historyPath, historyEntry);
-
-                    // === LIMPIAR HISTORIAL ANTIGUO (>14 días) ===
-                    DateTime cutoff = DateTime.UtcNow.AddDays(-14);
-                    var allHistory = await _firebase.GetMachineHistoryAsync(_pcName);
-                    foreach (var h in allHistory)
-                    {
-                        if (DateTime.TryParse(h.LastUpdate, out DateTime hTime) && hTime < cutoff)
-                        {
-                            string oldKey = $"machines/{_pcName}/history/{hTime:yyyyMMdd_HHmmss}";
-                            await _firebase.DeleteAtPathAsync(oldKey);
-                        }
-                    }
+                try { await _firebase.AddHistoryPointAsync(_pcName, info);
+                    await CleanupHistoryAsync();
                 }
-                catch (Exception ex)
-                {
-                    Log($"Failed to save/clean history: {ex.Message}");
-                }
+                catch (Exception ex) { Log($"Failed to save history: {ex.Message}"); }
             }
-
-            // --- Revisar comandos remotos ---
-            try
-            {
-                var cmd = await _firebase.GetClientCommandAsync(_pcName);
-                if (!string.IsNullOrEmpty(cmd))
-                {
-                    Log($"Received command: {cmd}");
-                    if (cmd == "KILL_FORBIDDEN")
-                    {
-                        KillForbiddenProcesses();
-                        await _firebase.SendClientCommandAsync(_pcName, null);
-                    }
-                }
-            }
-            catch { }
         }
 
         private void Log(string text)
@@ -371,27 +195,29 @@ namespace TaskEngine.Services
                 Console.WriteLine(msg);
                 OnLog?.Invoke(msg);
             }
-            catch { /* no hagas fallar el servicio por logging */ }
+            catch { }
         }
 
-        /// <summary>
-        /// Lista negra centralizada. Si luego quieres cargarla desde el servidor, cambia aquí para leer la configuración remota.
-        /// </summary>
-        /// <returns>nombres en minúscula sin extensión (.exe no incluido)</returns>
-        private string[] GetForbiddenList()
+        public Task SendSnapshotAsync()
         {
-            return new string[]
-            {
-                    "steam",
-                    "epicgameslauncher",
-                    "roblox",
-                    "minecraft",
-                    "valorant",
-                    "fortnite",
-                    "leagueoflegends",
-                    "discord"
-            }.Select(s => s.ToLowerInvariant()).ToArray();
+            // Llama al método que ya actualiza los datos y guarda en Firebase
+            return TimerTickAsync();
         }
+
+        public async Task UpdateNicknameAsync(string newNickname)
+        {
+            CurrentNickname = newNickname;
+
+            // Obtener información existente de la PC
+            var info = await _firebase.GetMachineAsync(_pcName);
+            if (info != null)
+            {
+                info.Nickname = newNickname;
+                await _firebase.SetMachineAsync(_pcName, info);
+            }
+        }
+
+
 
         #region IDisposable
         public void Dispose()
@@ -401,6 +227,7 @@ namespace TaskEngine.Services
             {
                 Stop();
                 _timer.Dispose();
+                _cleanupTimer.Dispose();
             }
             catch { }
             _disposed = true;

@@ -1,5 +1,6 @@
 ﻿using FireSharp.Interfaces;
 using FireSharp.Response;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,152 +19,130 @@ namespace TaskEngine.Services
         }
 
         // =============================================================
-        // GUARDAR INFORMACIÓN DE PC
+        // Guardar información actual de la PC (sobrescribe current)
         // =============================================================
-        public async Task SetMachineAsync(string name, PCInfo pc)
+        public async Task SetMachineAsync(string pcName, PCInfo pc)
         {
-            await client.SetAsync("machines/" + name, pc);
+            await client.SetAsync($"machines/{pcName}/current", pc);
         }
 
         // =============================================================
-        // ELIMINAR UN NODO DE FIREBASE
-        // =============================================================
-        public async Task DeleteAtPathAsync(string path)
-        {
-            try
-            {
-                await client.DeleteAsync(path);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error eliminando {path}: {ex.Message}", ex);
-            }
-        }
-
-
-        public async Task UpdateMachineAsync(string name, PCInfo info)
-        {
-            await client.SetAsync("machines/" + name, info);
-        }
-
-        /// <summary>
-        /// Guarda un objeto PCInfo en una ruta arbitraria (por ejemplo "history/PCNAME/key").
-        /// </summary>
-        public async Task SetMachineAtPathAsync(string path, PCInfo info)
-        {
-            try
-            {
-                await client.SetAsync(path, info);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error al guardar en {path}: {ex.Message}", ex);
-            }
-        }
-
-        // =============================================================
-        // OBTENER INFORMACIÓN DE UNA PC (CONSULTA DIRECTA A SU NODO)
+        // Obtener información actual de la PC
         // =============================================================
         public async Task<PCInfo> GetMachineAsync(string pcName)
         {
-            try
-            {
-                FirebaseResponse response = await client.GetAsync("machines/" + pcName);
-
-                if (response == null || response.Body == "null")
-                    return null;
-
-                return response.ResultAs<PCInfo>();
-            }
-            catch
-            {
-                return null;
-            }
+            var response = await client.GetAsync($"machines/{pcName}/current");
+            if (response?.Body == "null") return null;
+            return JsonConvert.DeserializeObject<PCInfo>(response.Body);
         }
 
         // =============================================================
-        // OBTENER TODAS LAS PCS
-        // =============================================================
-        public async Task<Dictionary<string, PCInfo>> GetAllMachinesAsync()
-        {
-            FirebaseResponse response = await client.GetAsync("machines");
-            return response.ResultAs<Dictionary<string, PCInfo>>() ?? new Dictionary<string, PCInfo>();
-        }
-
-        // =============================================================
-        // COMANDOS PARA EL CLIENTE
-        // =============================================================
-        public async Task SendClientCommandAsync(string pcName, string command)
-        {
-            if (command == null)
-            {
-                await client.DeleteAsync("commands/" + pcName);
-                return;
-            }
-
-            await client.SetAsync("commands/" + pcName, command);
-        }
-
-        public async Task<string> GetClientCommandAsync(string pcName)
-        {
-            FirebaseResponse response = await client.GetAsync("commands/" + pcName);
-
-            if (response == null || response.Body == "null")
-                return null;
-
-            try
-            {
-                return response.ResultAs<string>();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public async Task ClearClientCommandAsync(string pcName)
-        {
-            await client.DeleteAsync("commands/" + pcName);
-        }
-
-        // =============================================================
-        // HISTORIAL DE PC
+        // Agregar punto al historial (no sobrescribir)
         // =============================================================
         public async Task AddHistoryPointAsync(string pcName, PCInfo info)
         {
-            // Usamos LastUpdateTime como referencia
-            string key = info.LastUpdateTime.ToString("yyyy-MM-dd-HH-mm"); // Guardamos con minuto
-            await client.SetAsync($"machines/{pcName}/history/{key}", info);
+            await client.PushAsync($"machines/{pcName}/history", info);
         }
 
-        public async Task<List<PCInfo>> GetMachineHistoryAsync(string pcName)
+        // =============================================================
+        // Obtener historial de una PC
+        // =============================================================
+        public async Task<List<PCInfo>> GetMachineHistoryAsync(string pcName, int days = 14)
         {
-            FirebaseResponse response = await client.GetAsync($"machines/{pcName}/history");
+            var response = await client.GetAsync($"machines/{pcName}/history");
+            if (response?.Body == "null") return new List<PCInfo>();
 
-            if (response == null || response.Body == "null")
-                return new List<PCInfo>();
+            var dict = JsonConvert.DeserializeObject<Dictionary<string, PCInfo>>(response.Body);
+            if (dict == null) return new List<PCInfo>();
 
-            var dict = response.ResultAs<Dictionary<string, PCInfo>>();
-            if (dict == null || dict.Count == 0)
-                return new List<PCInfo>();
+            DateTime cutoff = DateTime.UtcNow.AddDays(-days);
+            var list = dict.Values
+                           .Where(pc => DateTime.TryParse(pc.LastUpdate, out var dt) && dt >= cutoff)
+                           .OrderBy(pc => DateTime.Parse(pc.LastUpdate))
+                           .ToList();
 
-            DateTime minDate = DateTime.UtcNow.AddDays(-14);
-            var list = new List<PCInfo>();
+            return list;
+        }
+
+        // =============================================================
+        // Obtener todas las PCs actuales
+        // =============================================================
+        public async Task<Dictionary<string, PCInfo>> GetAllMachinesAsync()
+        {
+            var response = await client.GetAsync("machines");
+            if (response?.Body == "null") return new Dictionary<string, PCInfo>();
+
+            var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.Body);
+            var result = new Dictionary<string, PCInfo>();
 
             foreach (var kv in dict)
             {
-                // clave: yyyy-MM-dd-HH-mm
-                if (DateTime.TryParseExact(kv.Key, "yyyy-MM-dd-HH-mm", null, System.Globalization.DateTimeStyles.AssumeUniversal, out DateTime timestamp))
+                try
                 {
-                    if (timestamp >= minDate)
+                    var objDict = kv.Value as Newtonsoft.Json.Linq.JObject;
+                    if (objDict != null && objDict["current"] != null)
                     {
-                        kv.Value.LastUpdateTime = timestamp;
-                        list.Add(kv.Value);
+                        var pc = objDict["current"].ToObject<PCInfo>();
+                        result[kv.Key] = pc;
                     }
                 }
+                catch { }
             }
 
-            return list.OrderBy(x => x.LastUpdateTime).ToList();
+            return result;
+        }
+
+        // =============================================================
+        // Enviar comando al cliente
+        // =============================================================
+        public async Task SendClientCommandAsync(string pcName, string command)
+        {
+            if (string.IsNullOrEmpty(command))
+                await client.DeleteAsync($"commands/{pcName}");
+            else
+                await client.SetAsync($"commands/{pcName}", command);
+        }
+
+
+        // =============================================================
+        // Obtener comando pendiente para el cliente
+        // =============================================================
+        public async Task<string> GetClientCommandAsync(string pcName)
+        {
+            var response = await client.GetAsync($"commands/{pcName}");
+            if (response?.Body == "null") return null;
+            return JsonConvert.DeserializeObject<string>(response.Body);
+        }
+
+        public async Task CleanOldHistoryAsync(string pcName, TimeSpan retention)
+        {
+            FirebaseResponse response = await client.GetAsync($"machines/{pcName}/history");
+            if (response?.Body == "null") return;
+
+            var historyDict = response.ResultAs<Dictionary<string, PCInfo>>();
+            if (historyDict == null || historyDict.Count == 0) return;
+
+            long cutoffTimestamp = DateTimeOffset.UtcNow.Add(-retention).ToUnixTimeSeconds();
+            var keysToDelete = new List<string>();
+
+            foreach (var (key, value) in historyDict)
+            {
+                if (value.Timestamp < cutoffTimestamp)
+                    keysToDelete.Add(key);
+            }
+
+            foreach (var key in keysToDelete)
+                await client.DeleteAsync($"machines/{pcName}/history/{key}");
+        }
+
+
+
+        // =============================================================
+        // Limpiar comando
+        // =============================================================
+        public async Task ClearClientCommandAsync(string pcName)
+        {
+            await client.DeleteAsync($"commands/{pcName}");
         }
     }
 }
