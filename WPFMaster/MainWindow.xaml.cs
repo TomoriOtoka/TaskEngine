@@ -331,22 +331,17 @@ namespace TaskEngine
                             Foreground = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
                             VerticalAlignment = VerticalAlignment.Center
                         };
-                        headerContainer.Children.Add(headerText);
 
-                        // ✅ Reutilizar o crear ToggleButton
+                        // === HEADER CON MODO CLASE Y NOTIFICACIONES ===
                         ToggleButton classModeButton;
                         if (_classModeButtons.TryGetValue(groupKey, out var existingButton))
                         {
+                            // Reutilizar el botón existente
                             classModeButton = existingButton;
-                            // Actualizar el estado desde Firebase (solo si no hay cambio pendiente)
-                            var firstPc = group.FirstOrDefault();
-                            if (firstPc != null)
-                            {
-                                classModeButton.IsChecked = firstPc.IsClassMode;
-                            }
                         }
                         else
                         {
+                            // Crear nuevo botón solo la primera vez
                             classModeButton = new ToggleButton
                             {
                                 Content = "Modo Clase",
@@ -356,17 +351,22 @@ namespace TaskEngine
                             };
                             classModeButton.Checked += (s, e) => SetClassMode(groupKey, true);
                             classModeButton.Unchecked += (s, e) => SetClassMode(groupKey, false);
-
-                            var firstPc = group.FirstOrDefault();
-                            if (firstPc != null)
-                            {
-                                classModeButton.IsChecked = firstPc.IsClassMode;
-                            }
+                            _classModeButtons[groupKey] = classModeButton;
                         }
 
+                        // Actualizar el estado desde Firebase (solo si no hay interacción pendiente)
+                        var firstPc = group.FirstOrDefault();
+                        if (firstPc != null)
+                        {
+                            // Solo actualizar si el botón no fue modificado por el usuario recientemente
+                            // (Firebase es la fuente de verdad, así que sí actualizamos)
+                            classModeButton.IsChecked = firstPc.IsClassMode;
+                        }
 
-
+                        headerContainer.Children.Add(headerText);
                         headerContainer.Children.Add(classModeButton);
+
+                        // === RESTO DEL CÓDIGO (botones de notificaciones, mensajes, etc.) ===
 
                         // === Después de crear el headerContainer y classModeButton ===
 
@@ -605,6 +605,27 @@ namespace TaskEngine
                             {
                                 // Restablecer cuando ya no hay apps prohibidas
                                 _sentNotificationKeys.Remove(forbiddenKey);
+                            }
+
+                            // === Después de la sección "Actualización de datos" ===
+
+                            // ✅ Si está en modo clase Y hay apps prohibidas, cerrarlas automáticamente
+                            if (pc.IsClassMode && hasForbidden)
+                            {
+                                // Evitar bucle infinito: solo una vez por PC cada 10 segundos
+                                string autoKillKey = $"autokill_{pc.PCName}";
+                                if (!_sentNotificationKeys.Contains(autoKillKey))
+                                {
+                                    _sentNotificationKeys.Add(autoKillKey);
+
+                                    // Ejecutar en segundo plano
+                                    _ = Task.Run(async () =>
+                                    {
+                                        await firebase.SendClientCommandAsync(pc.PCName, "KILL_FORBIDDEN");
+                                        await Task.Delay(10000); // Esperar 10 segundos antes de permitir nuevo auto-cierre
+                                        ResetNotificationKey(autoKillKey);
+                                    });
+                                }
                             }
 
                             // ✅ Alerta de temperatura alta (automática)
