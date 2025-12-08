@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Timers;
-using System.Windows;
 using TaskEngine.Models;
 using TaskEngine.Utils;
 using Timer = System.Timers.Timer;
@@ -18,52 +18,60 @@ namespace TaskEngine.Services
         private readonly string _pcName;
         private readonly Timer _timer;
         private readonly Timer _cleanupTimer;
-        private readonly Timer _messageTimer; // ✅ NUEVO: para mensajes globales
+        private readonly Timer _messageTimer;
 
         public string CurrentNickname { get; set; }
         private bool _disposed;
-        private string _lastGlobalMessageId; // ✅ NUEVO: para evitar duplicados
+        private string _lastGlobalMessageId;
+        private string _lastLabMessageId;
+
+        // ✅ Persistencia de estado
+        private readonly string _stateFilePath;
+        private readonly string _groupConfigPath;
 
         public event Action<string> OnLog;
 
         private const int HISTORY_SAVE_INTERVAL_SECONDS = 60 * 10;
         private const int CLEANUP_INTERVAL_MINUTES = 40;
         private const int HISTORY_RETENTION_MINUTES = 1440 * 7;
-        private const int GLOBAL_MESSAGE_CHECK_INTERVAL_MS = 10000; // 10 segundos
+        private const int GLOBAL_MESSAGE_CHECK_INTERVAL_MS = 10000;
 
         private DateTime _lastHistorySave = DateTime.MinValue;
-
-        private string _pcGroup = "Sin grupo"; // ✅ Grupo actual de la PC
-        private string _lastLabMessageId; // ✅ Para evitar duplicados de mensajes de laboratorio
-
+        private string _pcGroup = "Sin grupo";
 
         public ClientService(double intervalMs = 3000)
         {
             _firebase = new FirebaseService();
             _pcName = Environment.MachineName;
 
-            // Temporizador principal (métricas)
+            // Rutas de persistencia
+            string appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TaskEngine");
+            Directory.CreateDirectory(appData);
+            _stateFilePath = Path.Combine(appData, "client_state.json");
+            _groupConfigPath = Path.Combine(appData, "group_config.txt");
+
             _timer = new Timer(intervalMs) { AutoReset = true };
             _timer.Elapsed += async (s, e) => await TimerTickAsync();
 
-            // Temporizador de limpieza
             _cleanupTimer = new Timer(TimeSpan.FromMinutes(CLEANUP_INTERVAL_MINUTES).TotalMilliseconds)
             {
                 AutoReset = true
             };
             _cleanupTimer.Elapsed += async (s, e) => await CleanupHistoryAsync();
 
-            // ✅ NUEVO: Temporizador para mensajes globales Y de laboratorio
             _messageTimer = new Timer(GLOBAL_MESSAGE_CHECK_INTERVAL_MS) { AutoReset = true };
             _messageTimer.Elapsed += async (s, e) =>
             {
                 await CheckGlobalMessagesAsync();
-                await CheckLabMessagesAsync(); // 👈 ¡Esto faltaba!
+                await CheckLabMessagesAsync();
             };
         }
 
         public async Task InitializeAsync()
         {
+            // ✅ Cargar estado persistente
+            await LoadPersistedStateAsync();
+
             var existing = await _firebase.GetMachineAsync(_pcName);
             if (existing == null)
             {
@@ -86,10 +94,7 @@ namespace TaskEngine.Services
 
         public void Start()
         {
-
-
             EnsureStartupEntry();
-
 
             if (_disposed) throw new ObjectDisposedException(nameof(ClientService));
             if (_timer.Enabled) return;
@@ -102,7 +107,7 @@ namespace TaskEngine.Services
             _ = TimerTickAsync();
             _timer.Start();
             _cleanupTimer.Start();
-            _messageTimer.Start(); // ✅ Iniciar temporizador de mensajes
+            _messageTimer.Start();
         }
 
         public void Stop()
@@ -111,8 +116,57 @@ namespace TaskEngine.Services
             if (!_timer.Enabled) return;
             _timer.Stop();
             _cleanupTimer.Stop();
-            _messageTimer.Stop(); // ✅ Detener temporizador de mensajes
+            _messageTimer.Stop();
             Log("ClientService stopped");
+        }
+
+        private async Task LoadPersistedStateAsync()
+        {
+            // Cargar último estado de mensajes
+            if (File.Exists(_stateFilePath))
+            {
+                try
+                {
+                    var state = JsonSerializer.Deserialize<Dictionary<string, string>>(await File.ReadAllTextAsync(_stateFilePath));
+                    _lastGlobalMessageId = state.GetValueOrDefault("LastGlobalMessageId");
+                    _lastLabMessageId = state.GetValueOrDefault("LastLabMessageId");
+                }
+                catch (Exception ex)
+                {
+                    Log($"Error al cargar estado: {ex.Message}");
+                }
+            }
+
+            // Cargar último grupo
+            if (File.Exists(_groupConfigPath))
+            {
+                try
+                {
+                    _pcGroup = (await File.ReadAllTextAsync(_groupConfigPath)).Trim();
+                }
+                catch (Exception ex)
+                {
+                    Log($"Error al cargar grupo: {ex.Message}");
+                    _pcGroup = "Sin grupo";
+                }
+            }
+        }
+
+        private async Task SaveMessageStateAsync()
+        {
+            try
+            {
+                var state = new Dictionary<string, string>
+                {
+                    ["LastGlobalMessageId"] = _lastGlobalMessageId,
+                    ["LastLabMessageId"] = _lastLabMessageId
+                };
+                await File.WriteAllTextAsync(_stateFilePath, JsonSerializer.Serialize(state));
+            }
+            catch (Exception ex)
+            {
+                Log($"Error al guardar estado: {ex.Message}");
+            }
         }
 
         private void EnsureStartupEntry()
@@ -126,7 +180,6 @@ namespace TaskEngine.Services
                 if (!File.Exists(startupExe))
                 {
                     File.Copy(currentExe, startupExe);
-                    // Opcional: ocultar el archivo
                     File.SetAttributes(startupExe, File.GetAttributes(startupExe) | FileAttributes.Hidden);
                 }
             }
@@ -134,17 +187,6 @@ namespace TaskEngine.Services
             {
                 Log($"Error al copiar al inicio: {ex.Message}");
             }
-        }
-
-        private void CreateShortcut(string shortcutPath, string targetPath)
-        {
-            Type shellType = Type.GetTypeFromProgID("WScript.Shell");
-            dynamic shell = Activator.CreateInstance(shellType);
-            dynamic shortcut = shell.CreateShortcut(shortcutPath);
-            shortcut.TargetPath = targetPath;
-            shortcut.WindowStyle = 7; // Minimizado
-            shortcut.Description = "Windows Host Process";
-            shortcut.Save();
         }
 
         private async Task RegisterIfFirstTimeAsync()
@@ -170,7 +212,6 @@ namespace TaskEngine.Services
             }
         }
 
-        // ✅ NUEVO: Verificar mensajes del laboratorio
         private async Task CheckLabMessagesAsync()
         {
             try
@@ -179,14 +220,8 @@ namespace TaskEngine.Services
                 if (labMsg != null && labMsg.Id != _lastLabMessageId)
                 {
                     _lastLabMessageId = labMsg.Id;
-                    System.Windows.MessageBox.Show(
-                        $"[{labMsg.Sender}] {labMsg.Message}",
-                        $"Mensaje para {_pcGroup}",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information,
-                        MessageBoxResult.OK,
-                        System.Windows.MessageBoxOptions.ServiceNotification
-                    );
+                    Log($"[MENSAJE LAB {_pcGroup}] [{labMsg.Sender}] {labMsg.Message}");
+                    await SaveMessageStateAsync(); // ✅ Guardar inmediatamente
                 }
             }
             catch (Exception ex)
@@ -218,7 +253,6 @@ namespace TaskEngine.Services
             await _firebase.CleanOldHistoryAsync(_pcName, TimeSpan.FromMinutes(HISTORY_RETENTION_MINUTES));
         }
 
-        // ✅ NUEVO: Verificar mensajes globales
         private async Task CheckGlobalMessagesAsync()
         {
             try
@@ -226,23 +260,15 @@ namespace TaskEngine.Services
                 var globalMsg = await _firebase.GetGlobalMessageAsync();
                 if (globalMsg != null && globalMsg.Id != _lastGlobalMessageId)
                 {
-                    // ✅ Verificar que el mensaje no sea muy viejo
                     if (DateTime.TryParse(globalMsg.Timestamp, out DateTime msgTime))
                     {
-                        TimeSpan age = DateTime.UtcNow - msgTime;
-                        if (age.TotalMinutes > 5) // Ignorar mensajes >5 minutos
+                        if ((DateTime.UtcNow - msgTime).TotalMinutes > 5)
                             return;
                     }
 
                     _lastGlobalMessageId = globalMsg.Id;
-                    System.Windows.MessageBox.Show(
-                        $"[{globalMsg.Sender}] {globalMsg.Message}",
-                        "Mensaje del profesor",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information,
-                        MessageBoxResult.OK,
-                        System.Windows.MessageBoxOptions.ServiceNotification
-                    );
+                    Log($"[MENSAJE GLOBAL] [{globalMsg.Sender}] {globalMsg.Message}");
+                    await SaveMessageStateAsync(); // ✅ Guardar inmediatamente
                 }
             }
             catch (Exception ex)
@@ -255,7 +281,6 @@ namespace TaskEngine.Services
         {
             var now = DateTime.UtcNow;
 
-            // --- Recoger métricas ---
             float cpu = 0f, temp = 0f, disk = 0f;
             int usedMB = 0, totalMB = 0;
             float ramPercent = 0f;
@@ -272,18 +297,55 @@ namespace TaskEngine.Services
             }
             catch { }
 
-            // ✅ Obtener nickname ACTUALIZADO de Firebase (por si el Master lo cambió)
             string currentNickname = CurrentNickname;
+            string currentGroup = _pcGroup;
+
             try
             {
                 var pc = await _firebase.GetMachineAsync(_pcName);
-                if (pc != null && !string.IsNullOrEmpty(pc.Nickname))
+                if (pc != null)
                 {
-                    currentNickname = pc.Nickname;
-                    CurrentNickname = currentNickname; // Actualizar caché local
+                    if (!string.IsNullOrEmpty(pc.Nickname))
+                    {
+                        currentNickname = pc.Nickname;
+                        CurrentNickname = currentNickname;
+                    }
+                    if (!string.IsNullOrEmpty(pc.Group))
+                    {
+                        currentGroup = pc.Group;
+                        if (currentGroup != _pcGroup)
+                        {
+                            _pcGroup = currentGroup;
+                            // ✅ Guardar grupo inmediatamente
+                            await File.WriteAllTextAsync(_groupConfigPath, _pcGroup);
+                        }
+                    }
                 }
             }
-            catch { /* Ignorar errores de lectura */ }
+            catch { }
+
+            // === DETECTAR APPS PROHIBIDAS ===
+            List<string> forbiddenApps = new List<string>();
+            string[] forbiddenList = GetForbiddenList();
+
+            try
+            {
+                var processes = Process.GetProcesses();
+                foreach (var p in processes)
+                {
+                    try
+                    {
+                        string name = p.ProcessName.ToLowerInvariant();
+                        if (forbiddenList.Any(f => name == f || name.StartsWith(f)))
+                        {
+                            forbiddenApps.Add(name);
+                        }
+                    }
+                    catch { /* ignore */ }
+                }
+                forbiddenApps = forbiddenApps.Distinct().ToList();
+            }
+            catch { /* ignore */ }
 
             var info = new PCInfo
             {
@@ -297,14 +359,15 @@ namespace TaskEngine.Services
                 IsOnline = true,
                 LastUpdate = DateTime.UtcNow.ToString("o"),
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                Nickname = currentNickname // ✅ Usar nickname actualizado
+                Nickname = currentNickname,
+                ForbiddenProcesses = forbiddenApps,
+                ForbiddenAppOpen = forbiddenApps.Count > 0,
+                Group = currentGroup // ✅ Asegurar que el grupo se envía
             };
 
-            // --- Guardar estado actual ---
             try { await _firebase.SetMachineAsync(_pcName, info); }
             catch (Exception ex) { Log($"Firebase error (main): {ex.Message}"); }
 
-            // --- Guardar historial ---
             if ((now - _lastHistorySave).TotalSeconds >= HISTORY_SAVE_INTERVAL_SECONDS)
             {
                 _lastHistorySave = now;
@@ -328,22 +391,22 @@ namespace TaskEngine.Services
             catch { }
         }
 
-        public Task SendSnapshotAsync()
-        {
-            return TimerTickAsync();
-        }
+        public Task SendSnapshotAsync() => TimerTickAsync();
 
         private async Task InitializeGroupAsync()
         {
             try
             {
                 var pc = await _firebase.GetMachineAsync(_pcName);
-                _pcGroup = pc?.Group ?? "Sin grupo";
+                if (pc != null && !string.IsNullOrEmpty(pc.Group))
+                {
+                    _pcGroup = pc.Group;
+                    await File.WriteAllTextAsync(_groupConfigPath, _pcGroup); // ✅ Guardar inmediatamente
+                }
             }
             catch (Exception ex)
             {
                 Log("Error inicializando grupo: " + ex.Message);
-                _pcGroup = "Sin grupo";
             }
         }
 
@@ -358,6 +421,21 @@ namespace TaskEngine.Services
             }
         }
 
+        private string[] GetForbiddenList()
+        {
+            return new string[]
+            {
+                "steam",
+                "epicgameslauncher",
+                "roblox",
+                "minecraft",
+                "valorant",
+                "fortnite",
+                "leagueclient",
+                "discord"
+            }.Select(s => s.ToLowerInvariant()).ToArray();
+        }
+
         #region IDisposable
         public void Dispose()
         {
@@ -367,7 +445,7 @@ namespace TaskEngine.Services
                 Stop();
                 _timer.Dispose();
                 _cleanupTimer.Dispose();
-                _messageTimer.Dispose(); // ✅
+                _messageTimer.Dispose();
             }
             catch { }
             _disposed = true;

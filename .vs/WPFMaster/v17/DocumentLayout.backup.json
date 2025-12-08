@@ -11,12 +11,12 @@
       "RelativeMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|solutionrelative:wpfmaster\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|c:\\users\\victus\\desktop\\diainformatica\\master\\wpfmaster\\wpfmaster\\models\\pcinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|solutionrelative:wpfmaster\\models\\pcinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|c:\\users\\victus\\desktop\\diainformatica\\master\\wpfmaster\\wpfmaster\\services\\clientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|solutionrelative:wpfmaster\\services\\clientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|c:\\users\\victus\\desktop\\diainformatica\\master\\wpfmaster\\wpfmaster\\models\\pcinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|solutionrelative:wpfmaster\\models\\pcinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{70D585DF-C7B9-466F-BB37-FA947D099266}|WPFMaster\\Task Engine.csproj|c:\\users\\victus\\desktop\\diainformatica\\master\\wpfmaster\\wpfmaster\\task engine.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
@@ -121,17 +121,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 4,
           "Children": [
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{6324226f-61b6-4f28-92ee-18d4b5fe1e48}"
+            },
+            {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 2,
               "Title": "ClientService.cs",
               "DocumentMoniker": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Services\\ClientService.cs",
               "RelativeDocumentMoniker": "WPFMaster\\Services\\ClientService.cs",
               "ToolTip": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Services\\ClientService.cs",
               "RelativeToolTip": "WPFMaster\\Services\\ClientService.cs",
-              "ViewState": "AgIAAFcAAAAAAAAAAAAiwIgAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAJ4BAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-06T00:22:44.769Z"
             },
@@ -182,16 +186,11 @@
               "RelativeToolTip": "WPFMaster\\MainWindow.xaml.cs",
               "ViewState": "AgIAAMACAAAAAAAAAAAuwNkCAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-03T13:11:48.208Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{6324226f-61b6-4f28-92ee-18d4b5fe1e48}"
+              "WhenOpened": "2025-12-03T13:11:48.208Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "PCInfo.cs",
               "DocumentMoniker": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Models\\PCInfo.cs",
               "RelativeDocumentMoniker": "WPFMaster\\Models\\PCInfo.cs",
@@ -199,8 +198,7 @@
               "RelativeToolTip": "WPFMaster\\Models\\PCInfo.cs",
               "ViewState": "AgIAAAcAAAAAAAAAAIA2wBQAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-25T18:32:04.477Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-25T18:32:04.477Z"
             },
             {
               "$type": "Document",
