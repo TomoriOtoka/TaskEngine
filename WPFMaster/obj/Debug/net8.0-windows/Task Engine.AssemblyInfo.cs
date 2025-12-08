@@ -11,12 +11,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("Task Engine")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("dllhost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2c60fadc2a1087c20cd41c374e83a391f7e928c0")]
-[assembly: System.Reflection.AssemblyProductAttribute("Task Engine")]
-[assembly: System.Reflection.AssemblyTitleAttribute("Task Engine")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e797f150a4707ffd3b2a518d4ed9b2699c4a7ab")]
+[assembly: System.Reflection.AssemblyProductAttribute("dllhost")]
+[assembly: System.Reflection.AssemblyTitleAttribute("Windows Host Process")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 [assembly: System.Runtime.Versioning.TargetPlatformAttribute("Windows7.0")]
 [assembly: System.Runtime.Versioning.SupportedOSPlatformAttribute("Windows7.0")]

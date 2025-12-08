@@ -69,7 +69,7 @@ namespace TaskEngine {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/Task Engine;component/inputdialog.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/dllhost;component/inputdialog.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\InputDialog.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

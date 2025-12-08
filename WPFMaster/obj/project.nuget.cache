@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "8IgaGccsY/k=",
+  "dgSpecHash": "mck8qW0MUhw=",
   "success": true,
   "projectFilePath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
   "expectedPackageFiles": [
@@ -76,7 +76,7 @@
     {
       "code": "NU1603",
       "level": "Warning",
-      "message": "Task Engine depende de WPF.UI (>= 3.0.5.7), pero no se encontró WPF.UI 3.0.5.7. WPF.UI 3.1.0 se resolvió en su lugar.",
+      "message": "dllhost depende de WPF.UI (>= 3.0.5.7), pero no se encontró WPF.UI 3.0.5.7. WPF.UI 3.1.0 se resolvió en su lugar.",
       "projectPath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
       "warningLevel": 1,
       "filePath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",

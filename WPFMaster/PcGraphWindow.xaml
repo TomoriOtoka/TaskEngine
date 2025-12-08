@@ -24,7 +24,7 @@
 
         <!-- Informativo -->
         <TextBlock Grid.Row="1"
-                   Text="Últimos 14 días • Actualización automática cada hora"
+                   Text="Últimos 7 días • Actualización automática cada 10 minutos"
                    Foreground="#CCCCCC"
                    FontSize="12"
                    Margin="6,0"/>

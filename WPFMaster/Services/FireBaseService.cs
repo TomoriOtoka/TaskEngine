@@ -47,7 +47,7 @@ namespace TaskEngine.Services
         // =============================================================
         // Obtener historial de una PC
         // =============================================================
-        public async Task<List<PCInfo>> GetMachineHistoryAsync(string pcName, int days = 14)
+        public async Task<List<PCInfo>> GetMachineHistoryAsync(string pcName, int days = 7)
         {
             var response = await client.GetAsync($"machines/{pcName}/history");
             if (response?.Body == "null") return new List<PCInfo>();
@@ -127,12 +127,84 @@ namespace TaskEngine.Services
 
             foreach (var (key, value) in historyDict)
             {
+                // Validar timestamp
+                if (value.Timestamp == 0)
+                {
+                    keysToDelete.Add(key);
+                    continue;
+                }
+
                 if (value.Timestamp < cutoffTimestamp)
                     keysToDelete.Add(key);
             }
 
             foreach (var key in keysToDelete)
                 await client.DeleteAsync($"machines/{pcName}/history/{key}");
+        }
+
+        // Enviar mensaje global
+        public async Task SendGlobalMessageAsync(string message, string sender = "Master")
+        {
+            var globalMsg = new
+            {
+                Message = message,
+                Sender = sender,
+                Timestamp = DateTime.UtcNow.ToString("o"),
+                Id = Guid.NewGuid().ToString()
+            };
+            await client.SetAsync("global_message", globalMsg);
+        }
+
+        // Obtener mensaje global
+        public async Task<GlobalMessage> GetGlobalMessageAsync()
+        {
+            try
+            {
+                var response = await client.GetAsync("global_message");
+                if (response?.Body == "null") return null;
+                return response.ResultAs<GlobalMessage>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // Modelo para mensaje global
+        public class GlobalMessage
+        {
+            public string Message { get; set; }
+            public string Sender { get; set; }
+            public string Timestamp { get; set; }
+            public string Id { get; set; }
+        }
+
+        // Enviar mensaje a un laboratorio específico
+        public async Task SendLabMessageAsync(string labName, string message, string sender = "Master")
+        {
+            var labMsg = new
+            {
+                Message = message,
+                Sender = sender,
+                Timestamp = DateTime.UtcNow.ToString("o"),
+                Id = Guid.NewGuid().ToString()
+            };
+            await client.SetAsync($"lab_messages/{labName}", labMsg);
+        }
+
+        // Obtener mensaje de un laboratorio
+        public async Task<GlobalMessage> GetLabMessageAsync(string labName)
+        {
+            try
+            {
+                var response = await client.GetAsync($"lab_messages/{labName}");
+                if (response?.Body == "null") return null;
+                return response.ResultAs<GlobalMessage>();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
 

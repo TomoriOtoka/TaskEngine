@@ -164,6 +164,8 @@ namespace TaskEngine
             RefreshAllPlots();
         }
 
+       
+
         private void ReplaceScatter(WpfPlot plot, ref Scatter scatter, double[] xs, double[] ys)
         {
             plot.Plot.Remove(scatter);

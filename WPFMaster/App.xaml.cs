@@ -12,7 +12,7 @@ namespace TaskEngine
     {
         private const string MasterConfigFile = "master_config.json";
         private ClientService _clientService;
-        private System.Windows.Forms.NotifyIcon _notifyIcon;
+        // ❌ Eliminado: private System.Windows.Forms.NotifyIcon _notifyIcon;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -20,25 +20,20 @@ namespace TaskEngine
 
             string machine = Environment.MachineName.ToUpper();
 
-            // 1️⃣ Verificar si esta PC es Master mediante tu clase estática
             bool isMaster = MasterList.Masters
                 .Any(m => m.ToUpper() == machine);
 
-            // 2️⃣ Si NO está en masterlist → modo cliente directo
             if (!isMaster)
             {
                 StartClientMode(machine);
                 return;
             }
 
-            // 3️⃣ Cargar config del master (contiene password)
             var cfg = SecretHelper.LoadConfig();
 
             if (cfg == null)
             {
-                // Crear config automáticamente
                 string password = "adminuemam2025";
-
                 string salt = SecretHelper.GenerateSalt();
                 string hash = SecretHelper.HashPassword(password, salt);
 
@@ -54,7 +49,6 @@ namespace TaskEngine
                 );
             }
 
-            // 4️⃣ Mostrar Login porque es Master
             var login = new LoginWindow();
             bool? result = login.ShowDialog();
 
@@ -68,61 +62,22 @@ namespace TaskEngine
             }
         }
 
-
         private void StartClientMode(string machine)
         {
             _clientService = new ClientService();
             _clientService.Start();
 
-            _notifyIcon = new System.Windows.Forms.NotifyIcon();
-            _notifyIcon.Icon = new System.Drawing.Icon(
-                Application.GetResourceStream(
-                    new Uri("pack://application:,,,/TaskEngine.ico")
-                ).Stream
-            );
-
-            _notifyIcon.Text = "Task Engine - Cliente";
-            _notifyIcon.Visible = true;
-
-            var menu = new System.Windows.Forms.ContextMenuStrip();
-
-            // 🔹 Cambiar nickname
-            menu.Items.Add("Cambiar nickname", null, async (s, ev) =>
+            // ✅ Cliente completamente invisible
+            MainWindow = new Window
             {
-                string currentNickname = _clientService.CurrentNickname; // vamos a exponerlo en ClientService
-                string input = Microsoft.VisualBasic.Interaction.InputBox(
-                    "Introduce el nuevo nickname:",
-                    "Cambiar nickname",
-                    currentNickname
-                );
+                ShowInTaskbar = false,
+                Visibility = Visibility.Hidden,
+                WindowState = WindowState.Minimized
+            };
 
-                if (!string.IsNullOrWhiteSpace(input) && input != currentNickname)
-                {
-                    // Actualizamos en el ClientService
-                    _clientService.CurrentNickname = input;
-
-                    // Actualizamos Firebase
-                    try
-                    {
-                        await _clientService.UpdateNicknameAsync(input);
-                        MessageBox.Show($"Nickname cambiado a '{input}'", "Éxito");
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error al actualizar nickname: " + ex.Message, "Error");
-                    }
-                }
-            });
-
-            // 🔹 Salir
-            menu.Items.Add("Salir", null, (s, ev) =>
-            {
-                _notifyIcon.Visible = false;
-                Current.Shutdown();
-            });
-
-            _notifyIcon.ContextMenuStrip = menu;
+            // ✅ Mantener la aplicación viva
+            Current.MainWindow = MainWindow;
+            Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         }
-
     }
 }

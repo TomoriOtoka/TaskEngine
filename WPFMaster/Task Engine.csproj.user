@@ -7,9 +7,6 @@
     <Compile Update="ClientWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="ToastNotification.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="LoginWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

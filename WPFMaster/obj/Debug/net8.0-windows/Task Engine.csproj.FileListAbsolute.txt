@@ -1,8 +1,3 @@
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Task Engine.exe
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Task Engine.deps.json
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Task Engine.runtimeconfig.json
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Task Engine.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Task Engine.pdb
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Firebase.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\FireSharp.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\HidSharp.dll
@@ -75,23 +70,14 @@ C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ClientWindow.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\LoginWindow.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\MainWindow.g.cs
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ToastNotification.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\App.g.cs
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine_MarkupCompile.cache
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine_MarkupCompile.lref
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ToastNotification.baml
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.g.resources
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.AssemblyInfoInputs.cache
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.AssemblyInfo.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.csproj.CoreCompileInputs.cache
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.sourcelink.json
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Eng.7B80DE56.Up2Date
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\refint\Task Engine.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.pdb
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.genruntimeconfig.cache
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ref\Task Engine.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\InputDialog.baml
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\InputDialog.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\PcGraphWindow.baml
@@ -123,3 +109,14 @@ C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\runtimes\win-arm64\native\libSkiaSharp.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\runtimes\win-x64\native\libSkiaSharp.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\runtimes\win-x86\native\libSkiaSharp.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost_MarkupCompile.cache
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost.g.resources
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.exe
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.deps.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.runtimeconfig.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.pdb
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\refint\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost.pdb
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ref\dllhost.dll

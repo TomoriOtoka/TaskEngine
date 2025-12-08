@@ -14,6 +14,8 @@
     </Window.Background>
 
     <Grid>
+        
+        
         <DockPanel LastChildFill="True" Margin="10">
             <TextBlock x:Name="TitleBlock"
                        DockPanel.Dock="Top"
@@ -27,6 +29,18 @@
                        FontWeight="SemiBold"
                        Margin="0,0,0,12"
                        Foreground="Gray"/>
+
+            <!-- Dentro del DockPanel, arriba del ScrollViewer -->
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                <Button Content="📢 Mensaje global" Click="SendGlobalMessage_Click" Margin="5" Padding="5,2"/>
+            </StackPanel>
+
+            <!-- Dentro del DockPanel, arriba del ScrollViewer -->
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                <Button Content="🚨 Forzar apps prohibidas" Click="ForceForbiddenApps_Click" Margin="5"/>
+                <Button Content="🌡️ Forzar alta temperatura" Click="ForceHighTemp_Click" Margin="5"/>
+                <Button Content="🔌 Forzar PC offline" Click="ForceOffline_Click" Margin="5"/>
+            </StackPanel>
 
             <!-- ✅ StackPanel VERTICAL para laboratorios (Expander) -->
             <ScrollViewer VerticalScrollBarVisibility="Auto">
