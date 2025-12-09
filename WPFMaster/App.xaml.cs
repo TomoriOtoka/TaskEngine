@@ -12,7 +12,7 @@ namespace TaskEngine
     {
         private const string MasterConfigFile = "master_config.json";
         private ClientService _clientService;
-        // ❌ Eliminado: private System.Windows.Forms.NotifyIcon _notifyIcon;
+
 
         protected override void OnStartup(StartupEventArgs e)
         {

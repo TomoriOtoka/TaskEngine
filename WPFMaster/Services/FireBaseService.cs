@@ -3,6 +3,7 @@ using FireSharp.Response;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using TaskEngine.Models;
@@ -103,6 +104,15 @@ namespace TaskEngine.Services
                 await client.SetAsync($"commands/{pcName}", command);
         }
 
+        public async Task CleanGlobalMessageAsync()
+        {
+            await client.DeleteAsync("global_message");
+        }
+
+        public async Task CleanLabMessageAsync(string labName)
+        {
+            await client.DeleteAsync($"lab_messages/{labName}");
+        }
 
         // =============================================================
         // Obtener comando pendiente para el cliente
@@ -179,7 +189,9 @@ namespace TaskEngine.Services
             public string Id { get; set; }
         }
 
+
         // Enviar mensaje a un laboratorio específico
+        // Enviar mensaje a un laboratorio específico (usando Push para que cada mensaje tenga una clave única)
         public async Task SendLabMessageAsync(string labName, string message, string sender = "Master")
         {
             var labMsg = new
@@ -187,26 +199,64 @@ namespace TaskEngine.Services
                 Message = message,
                 Sender = sender,
                 Timestamp = DateTime.UtcNow.ToString("o"),
-                Id = Guid.NewGuid().ToString()
+                Id = Guid.NewGuid().ToString() // Asegura un ID único si es necesario, pero no es crucial con Push
             };
-            await client.SetAsync($"lab_messages/{labName}", labMsg);
+
+            // Usar PushAsync para generar una clave única por mensaje
+            await client.PushAsync($"lab_messages/{labName}", labMsg);
         }
 
+
         // Obtener mensaje de un laboratorio
+        // Obtener mensaje de un laboratorio (último enviado)
+        // Obtener mensaje de un laboratorio (último enviado)
         public async Task<GlobalMessage> GetLabMessageAsync(string labName)
         {
             try
             {
                 var response = await client.GetAsync($"lab_messages/{labName}");
                 if (response?.Body == "null") return null;
-                return response.ResultAs<GlobalMessage>();
+
+                var dict = JsonConvert.DeserializeObject<Dictionary<string, GlobalMessage>>(response.Body);
+                if (dict == null || dict.Count == 0) return null;
+
+                // Obtener el último mensaje insertado (Firebase Push genera claves ordenadas cronológicamente)
+                var lastEntry = dict.OrderByDescending(x => x.Key).FirstOrDefault();
+                if (lastEntry.Value == null) return null;
+
+                // Asignar la clave como ID si no tiene uno
+                if (string.IsNullOrEmpty(lastEntry.Value.Id))
+                {
+                    lastEntry.Value.Id = lastEntry.Key;
+                }
+
+                return lastEntry.Value;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"GetLabMessageAsync error: {ex.Message}");
                 return null;
             }
         }
 
+        // =============================================================
+        // Obtener el modo clase de un grupo
+        // =============================================================
+        public async Task<bool?> GetGroupClassModeAsync(string groupKey)
+        {
+            var response = await client.GetAsync($"groups/{groupKey}/IsClassMode");
+            if (response?.Body == "null") return null;
+            return JsonConvert.DeserializeObject<bool>(response.Body);
+        }
+
+
+        // =============================================================
+        // Establecer el modo clase de un grupo
+        // =============================================================
+        public async Task SetGroupClassModeAsync(string groupKey, bool enable)
+        {
+            await client.SetAsync($"groups/{groupKey}/IsClassMode", enable);
+        }
 
 
         // =============================================================

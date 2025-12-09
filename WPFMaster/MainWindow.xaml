@@ -30,18 +30,6 @@
                        Margin="0,0,0,12"
                        Foreground="Gray"/>
 
-            <!-- Dentro del DockPanel, arriba del ScrollViewer -->
-            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
-                <Button Content="📢 Mensaje global" Click="SendGlobalMessage_Click" Margin="5" Padding="5,2"/>
-            </StackPanel>
-
-            <!-- Dentro del DockPanel, arriba del ScrollViewer -->
-            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
-                <Button Content="🚨 Forzar apps prohibidas" Click="ForceForbiddenApps_Click" Margin="5"/>
-                <Button Content="🌡️ Forzar alta temperatura" Click="ForceHighTemp_Click" Margin="5"/>
-                <Button Content="🔌 Forzar PC offline" Click="ForceOffline_Click" Margin="5"/>
-            </StackPanel>
-
             <!-- ✅ StackPanel VERTICAL para laboratorios (Expander) -->
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="CardsPanel" Orientation="Vertical" />
@@ -57,18 +45,19 @@
 
     <!-- ✅ Estilo MÍNIMO para Expander (solo flecha) -->
     <Window.Resources>
-        <Style TargetType="Expander">
+        <Style x:Key="TextHeaderStyle" TargetType="Expander">
             <Setter Property="HeaderTemplate">
                 <Setter.Value>
                     <DataTemplate>
                         <TextBlock Text="{Binding}"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#3C3C3C"
-                                   HorizontalAlignment="Left"/>
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#3C3C3C"
+                               HorizontalAlignment="Left"/>
                     </DataTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
     </Window.Resources>
+
 </Window>

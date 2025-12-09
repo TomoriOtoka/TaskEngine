@@ -24,7 +24,7 @@ using Panel = System.Windows.Controls.Panel;
 using Point = System.Windows.Point;
 using Timer = System.Timers.Timer;
 using WpfProgressBar = System.Windows.Controls.ProgressBar;
-
+    
 namespace TaskEngine
 {
     public partial class MainWindow : Window
@@ -39,6 +39,7 @@ namespace TaskEngine
         private Dictionary<string, Expander> _groupExpanders = new Dictionary<string, Expander>();
         private Dictionary<string, ToggleButton> _classModeButtons = new Dictionary<string, ToggleButton>();
         private Dictionary<string, Button> _notificationButtons = new Dictionary<string, Button>();
+        private Dictionary<string, Button> _headerMessageButtons = new Dictionary<string, Button>();
 
         private Dictionary<string, List<TemperatureRecord>> _temperatureHistory = new Dictionary<string, List<TemperatureRecord>>();
         private Dictionary<string, bool> _expanderStates = new Dictionary<string, bool>();
@@ -51,7 +52,6 @@ namespace TaskEngine
         public MainWindow()
         {
             InitializeComponent();
-
             Loaded += (s, e) =>
             {
                 // Notificaciones de bienvenida (solo una vez)
@@ -80,6 +80,21 @@ namespace TaskEngine
             refreshTimer.AutoReset = true;
             refreshTimer.Start();
             _ = RefreshAsync();
+
+            // En StartRefreshLoop()
+            var messageCleanupTimer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds) { AutoReset = true };
+            messageCleanupTimer.Elapsed += async (s, e) =>
+            {
+                // Limpiar mensaje global
+                await firebase.CleanGlobalMessageAsync();
+                // Limpiar mensajes por laboratorio
+                foreach (var group in _labNotifications.Keys)
+                {
+                    await firebase.CleanLabMessageAsync(group);
+                }
+            };
+            messageCleanupTimer.Start();
+
 
             var cleanupTimer = new Timer(TimeSpan.FromHours(1).TotalMilliseconds) { AutoReset = true };
             cleanupTimer.Elapsed += (s, e) => CleanupOldNotifications();
@@ -280,433 +295,135 @@ namespace TaskEngine
             popup.ShowDialog();
         }
 
+        private Dictionary<string, bool> _classModeButtonsState = new Dictionary<string, bool>();
+        private readonly Dictionary<string, RoutedEventHandler> _classModeOnHandlers = new();
+        private readonly Dictionary<string, RoutedEventHandler> _classModeOffHandlers = new();
+
         private async Task RefreshAsync()
         {
             try
             {
                 var machines = await firebase.GetAllMachinesAsync();
+
                 if (machines == null)
                 {
                     Dispatcher.Invoke(() => StatusBlock.Text = $"No hay datos (last: {DateTime.Now:HH:mm:ss})");
                     return;
                 }
 
-                // Actualizar mapeo PC → Grupo
+                // --- 0) Normalizar mapa PC -> grupo ---
                 _pcToGroupMap.Clear();
                 foreach (var pc in machines.Values)
                 {
-                    string group = pc.Group ?? "Sin grupo";
-                    _pcToGroupMap[pc.PCName] = group;
+                    var g = string.IsNullOrWhiteSpace(pc.Group) ? "Sin grupo" : pc.Group.Trim();
+                    _pcToGroupMap[pc.PCName] = g;
+                }
+
+                // --- 1) Agrupar PCs por grupo ---
+                var groups = machines.Values
+                    .GroupBy(pc => string.IsNullOrWhiteSpace(pc.Group) ? "Sin grupo" : pc.Group.Trim())
+                    .OrderBy(g => g.Key)
+                    .ToList();
+
+                // --- 2) Leer modos de clase desde RTDB ---
+                var groupModes = new Dictionary<string, bool>();
+                foreach (var g in groups)
+                {
+                    try
+                    {
+                        groupModes[g.Key] = await firebase.GetGroupClassModeAsync(g.Key) ?? false;
+                    }
+                    catch
+                    {
+                        groupModes[g.Key] = false;
+                    }
                 }
 
                 Dispatcher.Invoke(() =>
                 {
-                    var groups = machines.Values
-                        .GroupBy(pc => pc.Group ?? "Sin grupo")
-                        .OrderBy(g => g.Key)
-                        .ToList();
-
-                    // Guardar estados de expanders existentes
-                    _expanderStates.Clear();
-                    foreach (var kvp in _groupExpanders)
-                    {
-                        _expanderStates[kvp.Key] = kvp.Value.IsExpanded;
-                    }
-
-                    CardsPanel.Children.Clear();
-                    _groupExpanders.Clear();
-                    _classModeButtons.Clear();
-                    _notificationButtons.Clear();
-
+                    // ---------------------------------------------
+                    //   3) CREAR / ACTUALIZAR GRUPOS
+                    // ---------------------------------------------
                     foreach (var group in groups)
                     {
                         string groupKey = group.Key;
 
-                        var headerContainer = new StackPanel { Orientation = Orientation.Horizontal };
-                        var headerText = new TextBlock
+                        // -- Crear expander si no existe --
+                        if (!_groupExpanders.TryGetValue(groupKey, out var expander))
                         {
-                            Text = groupKey.ToUpper(),
-                            FontSize = 20,
-                            FontWeight = FontWeights.Bold,
-                            Foreground = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                            VerticalAlignment = VerticalAlignment.Center
-                        };
-
-                        // === HEADER CON MODO CLASE Y NOTIFICACIONES ===
-                        ToggleButton classModeButton;
-                        if (_classModeButtons.TryGetValue(groupKey, out var existingButton))
-                        {
-                            // Reutilizar el botón existente
-                            classModeButton = existingButton;
-                        }
-                        else
-                        {
-                            // Crear nuevo botón solo la primera vez
-                            classModeButton = new ToggleButton
-                            {
-                                Content = "Modo Clase",
-                                Margin = new Thickness(10, 0, 0, 0),
-                                Padding = new Thickness(5, 2, 5, 2),
-                                IsChecked = false
-                            };
-                            classModeButton.Checked += (s, e) => SetClassMode(groupKey, true);
-                            classModeButton.Unchecked += (s, e) => SetClassMode(groupKey, false);
-                            _classModeButtons[groupKey] = classModeButton;
+                            expander = CreateGroupExpander(groupKey);
+                            _groupExpanders[groupKey] = expander;
+                            CardsPanel.Children.Add(expander);
                         }
 
-                        // Actualizar el estado desde Firebase (solo si no hay interacción pendiente)
-                        var firstPc = group.FirstOrDefault();
-                        if (firstPc != null)
-                        {
-                            // Solo actualizar si el botón no fue modificado por el usuario recientemente
-                            // (Firebase es la fuente de verdad, así que sí actualizamos)
-                            classModeButton.IsChecked = firstPc.IsClassMode;
-                        }
+                        var contentStack = (StackPanel)expander.Content;
 
-                        headerContainer.Children.Add(headerText);
-                        headerContainer.Children.Add(classModeButton);
+                        // -- Lista de PCs realmente en este grupo ahora --
+                        var realPCs = group.Select(pc => pc.PCName).ToHashSet();
 
-                        // === RESTO DEL CÓDIGO (botones de notificaciones, mensajes, etc.) ===
-
-                        // === Después de crear el headerContainer y classModeButton ===
-
-                        // ✅ Detectar cambios en el modo clase del grupo
-                        string modeKey = $"modeclass_{groupKey}";
-                        bool currentMode = group.FirstOrDefault()?.IsClassMode ?? false;
-
-                        // Verificar si el estado del modo clase ha cambiado
-                        bool shouldNotify = false;
-                        bool wasModeActive = _sentNotificationKeys.Contains(modeKey);
-
-                        if (currentMode && !wasModeActive)
-                        {
-                            // Modo clase se acaba de activar
-                            shouldNotify = true;
-                            _sentNotificationKeys.Add(modeKey);
-                        }
-                        else if (!currentMode && wasModeActive)
-                        {
-                            // Modo clase se acaba de desactivar
-                            shouldNotify = true;
-                            _sentNotificationKeys.Remove(modeKey);
-                        }
-
-                        if (shouldNotify)
-                        {
-                            string action = currentMode ? "activado" : "desactivado";
-                            AddLabNotification(groupKey, "Modo Clase", $"Modo Clase {action} en '{groupKey}' para {group.Count()} PCs.");
-                        }
-
-                        // Botón de notificaciones
-                        var notificationButton = new Button
-                        {
-                            Content = "🔔",
-                            Margin = new Thickness(10, 0, 0, 0),
-                            Padding = new Thickness(5, 2, 5, 2),
-                            Background = Brushes.Transparent,
-                            BorderBrush = Brushes.Transparent,
-                            Foreground = Brushes.Gray // ✅ Establecer color inicial
-                        };
-                        notificationButton.Click += (s, e) => ShowNotificationPanel(groupKey);
-                        headerContainer.Children.Add(notificationButton);
-
-                        _notificationButtons[groupKey] = notificationButton;
-
-                        // ✅ BOTÓN DE MENSAJE POR LABORATORIO
-                        var messageButton = new Button
-                        {
-                            Content = "✉️",
-                            Margin = new Thickness(5, 0, 0, 0),
-                            Padding = new Thickness(5, 2, 5, 2),
-                            Background = Brushes.Transparent,
-                            BorderBrush = Brushes.Transparent,
-                            ToolTip = "Enviar mensaje a este laboratorio"
-                        };
-                        messageButton.Click += (s, e) => SendLabMessage(groupKey);
-                        headerContainer.Children.Add(messageButton);
-
-                        // Inicializar bandeja si no existe
-                        if (!_labNotifications.ContainsKey(groupKey))
-                            _labNotifications[groupKey] = new List<Notification>();
-
-                        // ✅ Forzar actualización inmediata del estado
-                        UpdateNotificationButton(groupKey); // 👈 Esto evita el parpadeo
-
-                        _classModeButtons[groupKey] = classModeButton;
-                        _notificationButtons[groupKey] = notificationButton;
-
-                        if (!_labNotifications.ContainsKey(groupKey))
-                            _labNotifications[groupKey] = new List<Notification>();
-
-                        CardsPanel.Children.Add(headerContainer);
-
-                        var labExpander = new Expander
-                        {
-                            IsExpanded = _expanderStates.GetValueOrDefault(groupKey, true),
-                            Margin = new Thickness(0, 0, 0, 10)
-                        };
-
-                        var horizontalStack = new StackPanel { Orientation = Orientation.Horizontal };
-
+                        // ---------------------------------------------
+                        //   4) AÑADIR / ACTUALIZAR TARJETAS DEL GRUPO
+                        // ---------------------------------------------
                         foreach (var pc in group)
                         {
-                            if (!_pcControls.TryGetValue(pc.PCName, out var pcControls))
+                            if (!_pcControls.TryGetValue(pc.PCName, out var pcControl))
                             {
-                                var card = new Border
-                                {
-                                    CornerRadius = new CornerRadius(10),
-                                    ClipToBounds = true,
-                                    Opacity = 0,
-                                    Margin = new Thickness(5),
-                                    Background = new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1)),
-                                    BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220)),
-                                    BorderThickness = new Thickness(1),
-                                    Width = 280,
-                                    Tag = pc.PCName
-                                };
-
-                                var innerStack = new StackPanel { Margin = new Thickness(10) };
-                                card.Child = innerStack;
-
-                                var topPanel = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 4) };
-
-                                var nameText = new TextBlock
-                                {
-                                    Text = pc.PCName,
-                                    FontSize = 18,
-                                    FontWeight = FontWeights.Bold,
-                                    VerticalAlignment = VerticalAlignment.Center
-                                };
-                                DockPanel.SetDock(nameText, Dock.Left);
-
-                                var nicknameText = new TextBlock
-                                {
-                                    Text = string.IsNullOrEmpty(pc.Nickname) ? "Sin apodo" : pc.Nickname,
-                                    FontSize = 12,
-                                    Foreground = Brushes.Gray,
-                                    FontStyle = FontStyles.Italic,
-                                    Margin = new Thickness(0, 0, 0, 4)
-                                };
-
-                                var menuButton = new Button
-                                {
-                                    Content = "⋯",
-                                    Width = 24,
-                                    Height = 24,
-                                    Margin = new Thickness(8, 0, 0, 0),
-                                    Tag = pc.PCName,
-                                    FontWeight = FontWeights.Normal,
-                                    FontSize = 14
-                                };
-                                menuButton.Click += (s, e) => ShowContextMenu(s as Button);
-                                DockPanel.SetDock(menuButton, Dock.Right);
-
-                                topPanel.Children.Add(nameText);
-                                topPanel.Children.Add(menuButton);
-                                innerStack.Children.Add(topPanel);
-                                innerStack.Children.Add(nicknameText);
-
-                                var onlineText = new TextBlock { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) };
-                                var cpuText = new TextBlock();
-                                var cpuBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
-                                var tempText = new TextBlock();
-                                var ramText = new TextBlock();
-                                var ramBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
-                                var diskText = new TextBlock();
-                                var diskBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
-                                var lastText = new TextBlock { Foreground = Brushes.Gray, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
-
-                                innerStack.Children.Add(onlineText);
-                                innerStack.Children.Add(cpuText);
-                                innerStack.Children.Add(cpuBar);
-                                innerStack.Children.Add(tempText);
-                                innerStack.Children.Add(ramText);
-                                innerStack.Children.Add(ramBar);
-                                innerStack.Children.Add(diskText);
-                                innerStack.Children.Add(diskBar);
-                                innerStack.Children.Add(lastText);
-
-                                var forbiddenScroll = new ScrollViewer
-                                {
-                                    Height = 60,
-                                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-                                };
-                                var forbiddenText = new TextBlock
-                                {
-                                    Foreground = Brushes.Red,
-                                    FontSize = 12,
-                                    TextWrapping = TextWrapping.Wrap
-                                };
-                                forbiddenScroll.Content = forbiddenText;
-                                innerStack.Children.Add(forbiddenScroll);
-
-                                _pcControls[pc.PCName] = new PCControls
-                                {
-                                    Card = card,
-                                    CpuBar = cpuBar,
-                                    RamBar = ramBar,
-                                    DiskBar = diskBar,
-                                    CpuText = cpuText,
-                                    TempText = tempText,
-                                    RamText = ramText,
-                                    DiskText = diskText,
-                                    OnlineText = onlineText,
-                                    LastUpdateText = lastText,
-                                    NicknameText = nicknameText,
-                                    ForbiddenScroll = forbiddenScroll,
-                                    ForbiddenText = forbiddenText,
-                                    MenuButton = menuButton
-                                };
-
-                                card.BeginAnimation(Border.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5)));
+                                // Crear tarjeta por primera vez
+                                pcControl = CreatePCCard(pc);
+                                _pcControls[pc.PCName] = pcControl;
                             }
 
-                            // Actualizar datos
-                            // === Actualizar datos ===
-                            bool isOnline = IsPCOnline(pc);
-                            bool clockIssue = HasClockIssue(pc);
-
-                            var controls = _pcControls[pc.PCName];
-                            controls.OnlineText.Text = isOnline ? "ONLINE" : "OFFLINE";
-                            controls.OnlineText.Foreground = isOnline ? Brushes.Green : Brushes.Red;
-                            controls.NicknameText.Text = string.IsNullOrEmpty(pc.Nickname) ? "Sin apodo" : pc.Nickname;
-
-                            // ✅ Alerta de hora (automática)
-                            if (clockIssue)
+                            // Si la tarjeta está en otro grupo → moverla
+                            if (pcControl.Group != groupKey)
                             {
-                                string clockKey = $"clock_{pc.PCName}";
-                                if (!_sentNotificationKeys.Contains(clockKey))
+                                // Quitar del contenedor anterior
+                                var oldGroup = pcControl.Group;
+                                if (oldGroup != null && _groupExpanders.ContainsKey(oldGroup))
                                 {
-                                    AddLabNotification(groupKey, "Error de hora", $"{pc.PCName}: Reloj del sistema incorrecto.");
-                                    _sentNotificationKeys.Add(clockKey);
+                                    var oldStack = (StackPanel)_groupExpanders[oldGroup].Content;
+                                    oldStack.Children.Remove(pcControl.Card);
                                 }
-                            }
-                            else
-                            {
-                                // Restablecer cuando el problema se resuelve
-                                _sentNotificationKeys.Remove($"clock_{pc.PCName}");
-                            }
 
-                            bool hasForbidden = isOnline && pc.ForbiddenProcesses?.Count > 0;
-                            controls.ForbiddenText.Text = hasForbidden ? string.Join("\n", pc.ForbiddenProcesses) : "";
-                            controls.ForbiddenScroll.Visibility = Visibility.Visible;
-
-                            // ✅ Alerta de apps prohibidas (automática)
-                            string forbiddenKey = $"forbidden_{pc.PCName}";
-                            if (hasForbidden)
-                            {
-                                if (!_sentNotificationKeys.Contains(forbiddenKey))
-                                {
-                                    AddLabNotification(groupKey, "App prohibida", $"{pc.PCName} está ejecutando apps prohibidas.", pc.PCName);
-                                    _sentNotificationKeys.Add(forbiddenKey);
-                                }
-                            }
-                            else
-                            {
-                                // Restablecer cuando ya no hay apps prohibidas
-                                _sentNotificationKeys.Remove(forbiddenKey);
+                                // Meter en el nuevo grupo
+                                contentStack.Children.Add(pcControl.Card);
+                                pcControl.Group = groupKey;
                             }
 
-                            // === Después de la sección "Actualización de datos" ===
-
-                            // ✅ Si está en modo clase Y hay apps prohibidas, cerrarlas automáticamente
-                            if (pc.IsClassMode && hasForbidden)
-                            {
-                                // Evitar bucle infinito: solo una vez por PC cada 10 segundos
-                                string autoKillKey = $"autokill_{pc.PCName}";
-                                if (!_sentNotificationKeys.Contains(autoKillKey))
-                                {
-                                    _sentNotificationKeys.Add(autoKillKey);
-
-                                    // Ejecutar en segundo plano
-                                    _ = Task.Run(async () =>
-                                    {
-                                        await firebase.SendClientCommandAsync(pc.PCName, "KILL_FORBIDDEN");
-                                        await Task.Delay(10000); // Esperar 10 segundos antes de permitir nuevo auto-cierre
-                                        ResetNotificationKey(autoKillKey);
-                                    });
-                                }
-                            }
-
-                            // ✅ Alerta de temperatura alta (automática)
-                            string tempKey = $"temperature_{pc.PCName}";
-                            if (pc.CpuTemperature >= 80)
-                            {
-                                if (!_sentNotificationKeys.Contains(tempKey))
-                                {
-                                    AddLabNotification(groupKey, "Temperatura alta", $"{pc.PCName}: Temperatura >= 80°C.", pc.PCName);
-                                    _sentNotificationKeys.Add(tempKey);
-                                }
-                            }
-                            else
-                            {
-                                // Restablecer cuando la temperatura baja
-                                _sentNotificationKeys.Remove(tempKey);
-                            }
-
-                            // Resto del código de apariencia...
-                            if (hasForbidden)
-                            {
-                                controls.Card.Background = new SolidColorBrush(Color.FromRgb(255, 230, 230));
-                                controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 50, 50));
-                            }
-                            else
-                            {
-                                controls.Card.Background = new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1));
-                                controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220));
-                            }
-
-                            // ... resto del código ...
-
-                            controls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
-                            controls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
-                            controls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
-                            controls.RamText.Text = $"RAM: {pc.RamUsagePercent}% ({pc.UsedRamMB}/{pc.TotalRamMB} MB)";
-                            controls.DiskText.Text = $"DISCO: {pc.DiskUsagePercent}%";
-
-                            controls.CurrentTemperature = pc.CpuTemperature;
-                            controls.CurrentCpuUsage = pc.CpuUsage;
-
-                            AnimateProgressBar(controls.CpuBar, pc.CpuUsage);
-                            AnimateProgressBar(controls.RamBar, pc.RamUsagePercent);
-                            AnimateProgressBar(controls.DiskBar, pc.DiskUsagePercent);
-
-                            double cpu = pc.CpuUsage;
-                            double ram = pc.RamUsagePercent;
-                            double disk = pc.DiskUsagePercent;
-                            bool isZeroData = Math.Abs(cpu) < 0.1 && Math.Abs(ram) < 0.1 && Math.Abs(disk) < 0.1;
-
-                            // ✅ Notificación única para hardware
-                            string hardwareKey = $"hardware_{pc.PCName}";
-                            if (isZeroData)
-                            {
-                                controls.ZeroDataCount++;
-                                if (controls.ZeroDataCount >= 2)
-                                {
-                                    if (!_sentNotificationKeys.Contains(hardwareKey))
-                                    {
-                                        AddLabNotification(groupKey, "Error de hardware", $"{pc.PCName}: No se detectan métricas válidas.", pc.PCName);
-                                        _sentNotificationKeys.Add(hardwareKey);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                controls.ZeroDataCount = 0;
-                                ResetNotificationKey(hardwareKey);
-                            }
-
-                            if (controls.Card.Parent != null)
-                            {
-                                var parent = (Panel)controls.Card.Parent;
-                                parent.Children.Remove(controls.Card);
-                            }
-                            horizontalStack.Children.Add(controls.Card);
+                            UpdatePCControls(pcControl, pc, groupKey);
                         }
 
-                        labExpander.Content = horizontalStack;
-                        CardsPanel.Children.Add(labExpander);
-                        _groupExpanders[groupKey] = labExpander; // ✅ Guardar referencia
+                        // ---------------------------------------------
+                        //   5) ELIMINAR TARJETAS QUE YA NO SON DEL GRUPO
+                        // ---------------------------------------------
+                        var cardsToRemove = _pcControls
+                            .Where(kvp => kvp.Value.Group == groupKey && !realPCs.Contains(kvp.Key))
+                            .Select(k => k.Key)
+                            .ToList();
+
+                        foreach (var pcName in cardsToRemove)
+                        {
+                            var ctrl = _pcControls[pcName];
+                            contentStack.Children.Remove(ctrl.Card);
+                            ctrl.Group = null; // se reasignará cuando aparezca en otro grupo
+                        }
+                    }
+
+                    // ---------------------------------------------
+                    //   6) ELIMINAR GRUPOS VACÍOS O INEXISTENTES
+                    // ---------------------------------------------
+                    var existingKeys = groups.Select(g => g.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var toRemoveGroups = _groupExpanders.Keys
+                        .Where(k => !existingKeys.Contains(k))
+                        .ToList();
+
+                    foreach (var gKey in toRemoveGroups)
+                    {
+                        CardsPanel.Children.Remove(_groupExpanders[gKey]);
+                        _groupExpanders.Remove(gKey);
+
+                        _classModeButtons.Remove(gKey);
+                        _classModeButtonsState.Remove(gKey);
+                        _notificationButtons.Remove(gKey);
                     }
 
                     StatusBlock.Text = $"Última actualización: {DateTime.Now:HH:mm:ss}";
@@ -718,6 +435,328 @@ namespace TaskEngine
             }
         }
 
+        private Expander CreateGroupExpander(string groupKey)
+        {
+            // --- HEADER PANEL ---
+            var headerPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+
+
+            // Título del grupo
+            var headerText = new TextBlock
+            {
+                Text = groupKey.ToUpper(),
+                FontSize = 20,
+                FontWeight = FontWeights.Bold,
+                Foreground = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            headerPanel.Children.Add(headerText);
+
+            // --- Modo Clase (ToggleButton) ---
+            var classButton = new ToggleButton
+            {
+                Content = "Modo Clase",
+                Margin = new Thickness(10, 0, 0, 0),
+                Padding = new Thickness(5, 2, 5, 2)
+            };
+
+            // Crear handlers únicos
+            RoutedEventHandler onHandler = (s, e) => SetClassMode(groupKey, true);
+            RoutedEventHandler offHandler = (s, e) => SetClassMode(groupKey, false);
+
+            _classModeOnHandlers[groupKey] = onHandler;
+            _classModeOffHandlers[groupKey] = offHandler;
+
+            classButton.Checked += onHandler;
+            classButton.Unchecked += offHandler;
+
+            // Guardarlo para sincronizar estado luego
+            _classModeButtons[groupKey] = classButton;
+
+            headerPanel.Children.Add(classButton);
+
+            // --- Botón de notificaciones ---
+            var notifButton = new Button
+            {
+                Content = "🔔",
+                Margin = new Thickness(10, 0, 0, 0),
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                Foreground = Brushes.Gray
+            };
+            notifButton.Click += (s, e) => ShowNotificationPanel(groupKey);
+            _notificationButtons[groupKey] = notifButton;
+
+            headerPanel.Children.Add(notifButton);
+
+
+
+            // --- Botón de mensajes ---
+            var messageButton = new Button
+            {
+                Content = "✉️",
+                Margin = new Thickness(5, 0, 0, 0), // Espacio pequeño a la izquierda
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                ToolTip = $"Enviar mensaje a {groupKey}" // Ayuda visual
+            };
+            messageButton.Click += (s, e) => SendLabMessage(groupKey); // Reutilizas tu lógica vieja
+            _headerMessageButtons[groupKey] = messageButton; // Opcional: guardar referencia si la necesitas
+
+            headerPanel.Children.Add(messageButton);    
+
+            // === CONTENEDOR PARA PCS ===
+            var pcStack = new StackPanel
+            {
+                Orientation = Orientation.Horizontal
+            };
+
+            // === EXPANDER COMPLETO ===
+            var expander = new Expander
+            {
+                Header = headerPanel,
+                Content = pcStack,
+                IsExpanded = _expanderStates.GetValueOrDefault(groupKey, true),
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+
+            return expander;
+        }
+
+
+
+
+        private void UpdatePCControls(PCControls controls, PCInfo pc, string groupKey)
+        {
+            bool isOnline = IsPCOnline(pc);
+            bool clockIssue = HasClockIssue(pc);
+
+            controls.OnlineText.Text = isOnline ? "ONLINE" : "OFFLINE";
+            controls.OnlineText.Foreground = isOnline ? Brushes.Green : Brushes.Red;
+
+            if (!string.IsNullOrWhiteSpace(pc.Nickname))
+                controls.NicknameText.Text = pc.Nickname;
+
+            // ✅ Alerta de hora (automática)
+            if (clockIssue)
+            {
+                string clockKey = $"clock_{pc.PCName}";
+                if (!_sentNotificationKeys.Contains(clockKey))
+                {
+                    AddLabNotification(groupKey, "Error de hora", $"{pc.PCName}: Reloj del sistema incorrecto.");
+                    _sentNotificationKeys.Add(clockKey);
+                }
+            }
+            else
+            {
+                _sentNotificationKeys.Remove($"clock_{pc.PCName}");
+            }
+
+            bool hasForbidden = isOnline && pc.ForbiddenProcesses?.Count > 0;
+            controls.ForbiddenText.Text = hasForbidden ? string.Join("\n", pc.ForbiddenProcesses) : "";
+            controls.ForbiddenScroll.Visibility = hasForbidden ? Visibility.Visible : Visibility.Collapsed;
+
+            // ✅ Alerta de apps prohibidas (automática)
+            string forbiddenKey = $"forbidden_{pc.PCName}";
+            if (hasForbidden)
+            {
+                if (!_sentNotificationKeys.Contains(forbiddenKey))
+                {
+                    AddLabNotification(groupKey, "App prohibida", $"{pc.PCName} está ejecutando apps prohibidas.", pc.PCName);
+                    _sentNotificationKeys.Add(forbiddenKey);
+                }
+            }
+            else
+            {
+                _sentNotificationKeys.Remove(forbiddenKey);
+            }
+
+            // ✅ Alerta de temperatura alta (automática)
+            string tempKey = $"temperature_{pc.PCName}";
+            if (pc.CpuTemperature >= 80)
+            {
+                if (!_sentNotificationKeys.Contains(tempKey))
+                {
+                    AddLabNotification(groupKey, "Temperatura alta", $"{pc.PCName}: Temperatura >= 80°C.", pc.PCName);
+                    _sentNotificationKeys.Add(tempKey);
+                }
+            }
+            else
+            {
+                _sentNotificationKeys.Remove(tempKey);
+            }
+
+            // Resto del código de apariencia...
+            if (hasForbidden)
+            {
+                controls.Card.Background = new SolidColorBrush(Color.FromRgb(255, 230, 230));
+                controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 50, 50));
+            }
+            else
+            {
+                controls.Card.Background = new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1));
+                controls.Card.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220));
+            }
+
+            controls.LastUpdateText.Text = $"Última actualización: {ToRelativeTime(pc.LastUpdate)}";
+            controls.CpuText.Text = $"CPU: {pc.CpuUsage}%";
+            controls.TempText.Text = $"Temp: {pc.CpuTemperature}°C";
+            controls.RamText.Text = $"RAM: {pc.RamUsagePercent}% ({pc.UsedRamMB}/{pc.TotalRamMB} MB)";
+            controls.DiskText.Text = $"DISCO: {pc.DiskUsagePercent}%";
+
+            controls.CurrentTemperature = pc.CpuTemperature;
+            controls.CurrentCpuUsage = pc.CpuUsage;
+
+            AnimateProgressBar(controls.CpuBar, pc.CpuUsage);
+            AnimateProgressBar(controls.RamBar, pc.RamUsagePercent);
+            AnimateProgressBar(controls.DiskBar, pc.DiskUsagePercent);
+
+            double cpu = pc.CpuUsage;
+            double ram = pc.RamUsagePercent;
+            double disk = pc.DiskUsagePercent;
+            bool isZeroData = Math.Abs(cpu) < 0.1 && Math.Abs(ram) < 0.1 && Math.Abs(disk) < 0.1;
+
+            // ✅ Notificación única para hardware
+            string hardwareKey = $"hardware_{pc.PCName}";
+            if (isZeroData)
+            {
+                controls.ZeroDataCount++;
+                if (controls.ZeroDataCount >= 2)
+                {
+                    if (!_sentNotificationKeys.Contains(hardwareKey))
+                    {
+                        AddLabNotification(groupKey, "Error de hardware", $"{pc.PCName}: No se detectan métricas válidas.", pc.PCName);
+                        _sentNotificationKeys.Add(hardwareKey);
+                    }
+                }
+            }
+            else
+            {
+                controls.ZeroDataCount = 0;
+                ResetNotificationKey(hardwareKey);
+            }
+
+
+        }
+
+
+        private PCControls CreatePCCard(PCInfo pc)
+        {
+            var card = new Border
+            {
+                CornerRadius = new CornerRadius(10),
+                ClipToBounds = true,
+                Opacity = 0,
+                Margin = new Thickness(5),
+                Background = new LinearGradientBrush(Colors.White, Color.FromRgb(200, 230, 255), new Point(0, 0), new Point(0, 1)),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220)),
+                BorderThickness = new Thickness(1),
+                Width = 280,
+                Tag = pc.PCName
+            };
+
+            var innerStack = new StackPanel { Margin = new Thickness(10) };
+            card.Child = innerStack;
+
+            var topPanel = new DockPanel { LastChildFill = false, Margin = new Thickness(0, 0, 0, 4) };
+
+            var nameText = new TextBlock
+            {
+                Text = pc.PCName,
+                FontSize = 18,
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            DockPanel.SetDock(nameText, Dock.Left);
+
+            var nicknameText = new TextBlock
+            {
+                Text = string.IsNullOrEmpty(pc.Nickname) ? "Sin apodo" : pc.Nickname,
+                FontSize = 12,
+                Foreground = Brushes.Gray,
+                FontStyle = FontStyles.Italic,
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+
+            var menuButton = new Button
+            {
+                Content = "⋯",
+                Width = 24,
+                Height = 24,
+                Margin = new Thickness(8, 0, 0, 0),
+                Tag = pc.PCName,
+                FontWeight = FontWeights.Normal,
+                FontSize = 14
+            };
+            menuButton.Click += (s, e) => ShowContextMenu(s as Button);
+            DockPanel.SetDock(menuButton, Dock.Right);
+
+            topPanel.Children.Add(nameText);
+            topPanel.Children.Add(menuButton);
+            innerStack.Children.Add(topPanel);
+            innerStack.Children.Add(nicknameText);
+
+            var onlineText = new TextBlock { FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8) };
+            var cpuText = new TextBlock();
+            var cpuBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
+            var tempText = new TextBlock();
+            var ramText = new TextBlock();
+            var ramBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
+            var diskText = new TextBlock();
+            var diskBar = new WpfProgressBar { Height = 20, Margin = new Thickness(0, 2, 0, 2) };
+            var lastText = new TextBlock { Foreground = Brushes.Gray, FontSize = 12, Margin = new Thickness(0, 4, 0, 0) };
+
+            innerStack.Children.Add(onlineText);
+            innerStack.Children.Add(cpuText);
+            innerStack.Children.Add(cpuBar);
+            innerStack.Children.Add(tempText);
+            innerStack.Children.Add(ramText);
+            innerStack.Children.Add(ramBar);
+            innerStack.Children.Add(diskText);
+            innerStack.Children.Add(diskBar);
+            innerStack.Children.Add(lastText);
+
+            var forbiddenScroll = new ScrollViewer
+            {
+                Height = 60,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
+            var forbiddenText = new TextBlock
+            {
+                Foreground = Brushes.Red,
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap
+            };
+            forbiddenScroll.Content = forbiddenText;
+            innerStack.Children.Add(forbiddenScroll);
+
+            var controls = new PCControls
+            {
+                Card = card,
+                CpuBar = cpuBar,
+                RamBar = ramBar,
+                DiskBar = diskBar,
+                CpuText = cpuText,
+                TempText = tempText,
+                RamText = ramText,
+                DiskText = diskText,
+                OnlineText = onlineText,
+                LastUpdateText = lastText,
+                NicknameText = nicknameText,
+                ForbiddenScroll = forbiddenScroll,
+                ForbiddenText = forbiddenText,
+                MenuButton = menuButton
+            };
+
+            card.BeginAnimation(Border.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5)));
+            return controls;
+        }
+
         // RESTO DEL CÓDIGO SIN CAMBIOS (SetClassMode, ShowContextMenu, etc.)
         // (Mantén exactamente como lo tienes, ya que no necesitan modificaciones)
 
@@ -725,32 +764,17 @@ namespace TaskEngine
         {
             try
             {
-                var machines = await firebase.GetAllMachinesAsync();
-                if (machines == null) return;
+                // ✅ ACTUALIZAR SOLO EL MODO CLASE DEL GRUPO
+                await firebase.SetGroupClassModeAsync(groupKey, enable);
 
+                // ✅ OBTENER LAS PCS DEL GRUPO Y ACTUALIZARLAS (opcional, para UI inmediata)
+                var machines = await firebase.GetAllMachinesAsync();
                 var pcsInGroup = machines.Values
                     .Where(pc => (pc.Group ?? "Sin grupo") == groupKey)
                     .ToList();
 
-                if (!pcsInGroup.Any())
-                {
-                    MessageBox.Show($"No hay PCs en el laboratorio '{groupKey}'.", "Modo Clase", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                foreach (var pc in pcsInGroup)
-                {
-                    pc.IsClassMode = enable;
-                    await firebase.SetMachineAsync(pc.PCName, pc);
-                }
-
                 string action = enable ? "activado" : "desactivado";
-                if (_classModeButtons.TryGetValue(groupKey, out var button))
-                {
-                    button.IsChecked = enable;
-                }
-
-
+                
             }
             catch (Exception ex)
             {
@@ -761,6 +785,9 @@ namespace TaskEngine
                 }
             }
         }
+
+
+
 
         private async void SendLabMessage(string labName)
         {
@@ -994,53 +1021,7 @@ namespace TaskEngine
             return isRecent && diffHours > 2;
         }
 
-
-
-        // CODIGOS DE PRUEBA
-
-        // Al final de la clase MainWindow (antes de las clases anidadas)
-        private void ForceForbiddenApps_Click(object sender, RoutedEventArgs e)
-        {
-            // Simular que pc-01 tiene apps prohibidas
-            string groupKey = "LAB A";
-            string pcName = "pc-01";
-            string forbiddenKey = $"forbidden_{pcName}";
-
-            if (!_sentNotificationKeys.Contains(forbiddenKey))
-            {
-                AddLabNotification(groupKey, "App prohibida", $"{pcName} está ejecutando Steam.", pcName);
-                _sentNotificationKeys.Add(forbiddenKey);
-            }
-        }
-
-        private void ForceHighTemp_Click(object sender, RoutedEventArgs e)
-        {
-            string groupKey = "LAB A";
-            string pcName = "DESKTOP-O9FQ4QO";
-            string tempKey = $"temperature_{pcName}";
-
-            if (!_sentNotificationKeys.Contains(tempKey))
-            {
-                AddLabNotification(groupKey, "Temperatura alta", $"{pcName}: 85°C por más de 5 minutos.", pcName);
-                _sentNotificationKeys.Add(tempKey);
-            }
-        }
-
-        private void ForceOffline_Click(object sender, RoutedEventArgs e)
-        {
-            string groupKey = "LAB A";
-            string pcName = "DESKTOP-O9FQ4QO";
-            string offlineKey = $"offline_{pcName}";
-
-            if (!_sentNotificationKeys.Contains(offlineKey))
-            {
-                AddLabNotification(groupKey, "PC Offline", $"{pcName} no responde desde hace 5 minutos.", pcName);
-                _sentNotificationKeys.Add(offlineKey);
-            }
-        }
-
-        //fin prueba
-
+  
         protected override void OnClosed(EventArgs e)
         {
             refreshTimer?.Stop();
@@ -1067,7 +1048,9 @@ namespace TaskEngine
             public int ZeroDataCount { get; set; } = 0;
             public float CurrentTemperature { get; set; }
             public float CurrentCpuUsage { get; set; }
+            public string Group { get; set; }
         }
+
 
         public class TemperatureRecord
         {
