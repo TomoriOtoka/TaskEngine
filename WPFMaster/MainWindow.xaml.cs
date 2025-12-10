@@ -57,17 +57,7 @@ namespace TaskEngine
 
             Loaded += (s, e) =>
             {
-
-                // Activar autoinicio por primera vez (opcional)
-                if (!IsAutoStartEnabled())
-                {
-                    SetAutoStart(true);
-                    TitleBlock.Text = $"MASTER: {machineName}";
-                }
-                else
-                {
-                    TitleBlock.Text = $"MASTER: {machineName}";
-                }
+                TitleBlock.Text = $"MASTER: {machineName}";
 
                 // Notificaciones de bienvenida
                 AddLabNotification("Sin grupo", "Sistema iniciado", "Bienvenido al panel de monitoreo.");
@@ -1079,58 +1069,6 @@ namespace TaskEngine
             public DateTime Timestamp { get; set; }
             public float Temp { get; set; }
         }
-
-        // --- AUTO STARTUP FUNCTIONS ---
-
-        private const string AUTO_STARTUP_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-
-        // Método para activar/desactivar el inicio automático
-        private void SetAutoStart(bool enable)
-        {
-            try
-            {
-                using (var key = Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, true))
-                {
-                    if (enable)
-                    {
-                        // Ruta del ejecutable actual
-                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-                        key.SetValue("TaskEngineMaster", exePath);
-                    }
-                    else
-                    {
-                        key.DeleteValue("TaskEngineMaster", false); // 'false' evita excepción si no existe
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al configurar inicio automático: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        // Método para verificar si está activado el inicio automático
-        private bool IsAutoStartEnabled()
-        {
-            try
-            {
-                using (var key = Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, false)) // Solo lectura
-                {
-                    var value = key?.GetValue("TaskEngineMaster");
-                    if (value != null)
-                    {
-                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-                        return value.ToString() == exePath;
-                    }
-                }
-            }
-            catch
-            {
-                // Si hay un error de acceso, asumimos que no está activado
-            }
-            return false;
-        }
-
 
     }
 }

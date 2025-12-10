@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("dllhost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d806869fb57628bcea445e1ae37e832fd2275f32")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+22689bfa9b630b7fb7ae09eb76649016212d4b1c")]
 [assembly: System.Reflection.AssemblyProductAttribute("dllhost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Windows Host Process")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

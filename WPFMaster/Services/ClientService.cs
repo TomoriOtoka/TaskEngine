@@ -74,6 +74,7 @@ namespace TaskEngine.Services
             _cleanupTimer = new Timer(TimeSpan.FromMinutes(CLEANUP_INTERVAL_MINUTES).TotalMilliseconds) { AutoReset = true };
             _cleanupTimer.Elapsed += async (s, e) => await CleanupHistoryAsync();
 
+
             _messageTimer = new Timer(MESSAGE_CHECK_INTERVAL_MS) { AutoReset = true };
             _messageTimer.Elapsed += async (s, e) =>
             {   
@@ -88,6 +89,13 @@ namespace TaskEngine.Services
         {
             if (_disposed) throw new ObjectDisposedException(nameof(ClientService));
             if (_metricsTimer.Enabled) return;
+
+            // ✅ ACTIVAR AUTOINICIO DESDE LA PRIMERA VEZ QUE SE INICIA EL CLIENTE
+            if (!IsAutoStartEnabled())
+            {
+                SetAutoStart(true);
+                Log("Inicio automático activado para el cliente.");
+            }
 
             // Asegurar que la PC exista en Firebase si nunca antes
             _ = RegisterIfFirstTimeAsync();
@@ -139,6 +147,8 @@ namespace TaskEngine.Services
         public async Task InitializeAsync()
         {
             await LoadPersistedStateAsync();
+
+            
 
             // Si no existe registro "current" en Firebase, lo creamos (esto evita nulls al master)
             try
@@ -727,6 +737,57 @@ namespace TaskEngine.Services
             }
             catch { }
             _disposed = true;
+        }
+
+        // --- AUTO STARTUP FUNCTIONS ---
+
+        private const string AUTO_STARTUP_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
+        // Método para activar/desactivar el inicio automático
+        private void SetAutoStart(bool enable)
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, true))
+                {
+                    if (enable)
+                    {
+                        // Ruta del ejecutable actual
+                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                        key.SetValue("TaskEngineClient", exePath); // Cambié el nombre para distinguirlo del master
+                    }
+                    else
+                    {
+                        key.DeleteValue("TaskEngineClient", false); // 'false' evita excepción si no existe
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Error al configurar inicio automático: {ex.Message}");
+            }
+        }
+
+        // Método para verificar si está activado el inicio automático
+        private bool IsAutoStartEnabled()
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, false)) // Solo lectura
+                {
+                    var value = key?.GetValue("TaskEngineClient");
+                    if (value != null)
+                    {
+                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                        return value.ToString() == exePath;
+                    }
+                }
+            }
+            catch
+            {
+                // Si hay un error de acceso, asumimos que no está activado
+            }
+            return false;
         }
     }
 }
