@@ -14,8 +14,8 @@
     </Window.Background>
 
     <Grid>
-        
-        
+
+
         <DockPanel LastChildFill="True" Margin="10">
             <TextBlock x:Name="TitleBlock"
                        DockPanel.Dock="Top"

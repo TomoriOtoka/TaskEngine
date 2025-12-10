@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -24,7 +26,7 @@ using Panel = System.Windows.Controls.Panel;
 using Point = System.Windows.Point;
 using Timer = System.Timers.Timer;
 using WpfProgressBar = System.Windows.Controls.ProgressBar;
-    
+
 namespace TaskEngine
 {
     public partial class MainWindow : Window
@@ -52,14 +54,26 @@ namespace TaskEngine
         public MainWindow()
         {
             InitializeComponent();
+
             Loaded += (s, e) =>
             {
-                // Notificaciones de bienvenida (solo una vez)
+
+                // Activar autoinicio por primera vez (opcional)
+                if (!IsAutoStartEnabled())
+                {
+                    SetAutoStart(true);
+                    TitleBlock.Text = $"MASTER: {machineName}";
+                }
+                else
+                {
+                    TitleBlock.Text = $"MASTER: {machineName}";
+                }
+
+                // Notificaciones de bienvenida
                 AddLabNotification("Sin grupo", "Sistema iniciado", "Bienvenido al panel de monitoreo.");
             };
 
             FlashWindow(this, 10);
-            TitleBlock.Text = $"MASTER: {machineName}";
             StartRefreshLoop();
         }
 
@@ -508,7 +522,7 @@ namespace TaskEngine
             messageButton.Click += (s, e) => SendLabMessage(groupKey); // Reutilizas tu lógica vieja
             _headerMessageButtons[groupKey] = messageButton; // Opcional: guardar referencia si la necesitas
 
-            headerPanel.Children.Add(messageButton);    
+            headerPanel.Children.Add(messageButton);
 
             // === CONTENEDOR PARA PCS ===
             var pcStack = new StackPanel
@@ -774,7 +788,7 @@ namespace TaskEngine
                     .ToList();
 
                 string action = enable ? "activado" : "desactivado";
-                
+
             }
             catch (Exception ex)
             {
@@ -954,7 +968,7 @@ namespace TaskEngine
                     MessageBox.Show("Error al actualizar grupo: " + ex.Message);
                 }
             }
-        }   
+        }
 
         private void AnimateProgressBar(WpfProgressBar bar, double value)
         {
@@ -986,11 +1000,19 @@ namespace TaskEngine
             if (diff.TotalSeconds < 60)
                 return "hace unos segundos";
             if (diff.TotalMinutes < 60)
-                return $"hace {(int)diff.TotalMinutes} minutos";
+            {
+                int minutes = (int)diff.TotalMinutes;
+                return $"hace {minutes} {(minutes == 1 ? "minuto" : "minutos")}";
+            }
             if (diff.TotalHours < 24)
-                return $"hace {(int)diff.TotalHours} horas";
-            return $"hace {(int)diff.TotalDays} días";
+            {
+                int hours = (int)diff.TotalHours;
+                return $"hace {hours} {(hours == 1 ? "hora" : "horas")}";
+            }
+            int days = (int)diff.TotalDays;
+            return $"hace {days} {(days == 1 ? "día" : "días")}";
         }
+        
 
         private bool IsPCOnline(PCInfo pc)
         {
@@ -1021,7 +1043,7 @@ namespace TaskEngine
             return isRecent && diffHours > 2;
         }
 
-  
+
         protected override void OnClosed(EventArgs e)
         {
             refreshTimer?.Stop();
@@ -1057,5 +1079,58 @@ namespace TaskEngine
             public DateTime Timestamp { get; set; }
             public float Temp { get; set; }
         }
+
+        // --- AUTO STARTUP FUNCTIONS ---
+
+        private const string AUTO_STARTUP_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
+        // Método para activar/desactivar el inicio automático
+        private void SetAutoStart(bool enable)
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, true))
+                {
+                    if (enable)
+                    {
+                        // Ruta del ejecutable actual
+                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                        key.SetValue("TaskEngineMaster", exePath);
+                    }
+                    else
+                    {
+                        key.DeleteValue("TaskEngineMaster", false); // 'false' evita excepción si no existe
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al configurar inicio automático: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Método para verificar si está activado el inicio automático
+        private bool IsAutoStartEnabled()
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, false)) // Solo lectura
+                {
+                    var value = key?.GetValue("TaskEngineMaster");
+                    if (value != null)
+                    {
+                        string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                        return value.ToString() == exePath;
+                    }
+                }
+            }
+            catch
+            {
+                // Si hay un error de acceso, asumimos que no está activado
+            }
+            return false;
+        }
+
+
     }
 }

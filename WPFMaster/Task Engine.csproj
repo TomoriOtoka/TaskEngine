@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <None Remove="master_config.json" />
+    <None Remove="scp_background.png" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -57,6 +58,10 @@
       <HintPath>..\..\..\..\..\Downloads\LibreHardwareMonitor-net472\LibreHardwareMonitorLib.dll</HintPath>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="scp_background.png" />
   </ItemGroup>
 
 </Project>

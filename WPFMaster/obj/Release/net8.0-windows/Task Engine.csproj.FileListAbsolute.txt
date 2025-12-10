@@ -1,8 +1,3 @@
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\Task Engine.exe
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\Task Engine.deps.json
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\Task Engine.runtimeconfig.json
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\Task Engine.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\Task Engine.pdb
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\Firebase.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\FireSharp.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\HidSharp.dll
@@ -75,20 +70,53 @@ C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\ne
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\ClientWindow.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\LoginWindow.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\MainWindow.g.cs
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\ToastNotification.g.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\App.g.cs
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine_MarkupCompile.cache
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine_MarkupCompile.lref
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\ToastNotification.baml
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.g.resources
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.AssemblyInfoInputs.cache
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.AssemblyInfo.cs
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.csproj.CoreCompileInputs.cache
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.sourcelink.json
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Eng.7B80DE56.Up2Date
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\refint\Task Engine.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.pdb
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\Task Engine.genruntimeconfig.cache
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\ref\Task Engine.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\InputDialog.baml
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\PcGraphWindow.baml
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\InputDialog.g.cs
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\PcGraphWindow.g.cs
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\dllhost_MarkupCompile.cache
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\dllhost.g.resources
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\dllhost.exe
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\dllhost.deps.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\dllhost.runtimeconfig.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\dllhost.pdb
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Compute.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Core.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\GLWpfControl.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Graphics.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Input.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Mathematics.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.OpenAL.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Windowing.Common.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Windowing.Desktop.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\OpenTK.Windowing.GraphicsLibraryFramework.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\ScottPlot.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\ScottPlot.WPF.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\SkiaSharp.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\SkiaSharp.Views.Desktop.Common.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\SkiaSharp.Views.WPF.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\linux-x64\native\libglfw.so.3.3
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\osx-x64\native\libglfw.3.dylib
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\win-x64\native\glfw3.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\win-x86\native\glfw3.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\linux-arm\native\libSkiaSharp.so
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\linux-arm64\native\libSkiaSharp.so
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\linux-musl-x64\native\libSkiaSharp.so
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\linux-x64\native\libSkiaSharp.so
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\osx\native\libSkiaSharp.dylib
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\win-arm64\native\libSkiaSharp.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\win-x64\native\libSkiaSharp.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Release\net8.0-windows\runtimes\win-x86\native\libSkiaSharp.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\refint\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\dllhost.pdb
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Release\net8.0-windows\ref\dllhost.dll

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:scottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
         Title="PcGraphWindow" Height="720" Width="1100"
-        Background="#0B0B0B" 
+        Background="DarkGray" 
         WindowStartupLocation="CenterScreen">
 
     <Grid Margin="12">
