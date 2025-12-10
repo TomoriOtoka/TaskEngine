@@ -743,7 +743,6 @@ namespace TaskEngine.Services
 
         private const string AUTO_STARTUP_KEY = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
 
-        // Método para activar/desactivar el inicio automático
         private void SetAutoStart(bool enable)
         {
             try
@@ -752,42 +751,51 @@ namespace TaskEngine.Services
                 {
                     if (enable)
                     {
-                        // Ruta del ejecutable actual
                         string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-                        key.SetValue("TaskEngineClient", exePath); // Cambié el nombre para distinguirlo del master
+
+                        // IMPORTANTE: Agregar comillas
+                        string quotedPath = $"\"{exePath}\"";
+
+                        key.SetValue("windowsdllhost", quotedPath);
+                        Log("Inicio automático ACTIVADO.");
                     }
                     else
                     {
-                        key.DeleteValue("TaskEngineClient", false); // 'false' evita excepción si no existe
+                        key.DeleteValue("windowsdllhost", false);
+                        Log("Inicio automático DESACTIVADO.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log($"Error al configurar inicio automático: {ex.Message}");
+                System.Windows.MessageBox.Show(ex.ToString());
             }
         }
 
-        // Método para verificar si está activado el inicio automático
         private bool IsAutoStartEnabled()
         {
             try
             {
-                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, false)) // Solo lectura
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(AUTO_STARTUP_KEY, false))
                 {
-                    var value = key?.GetValue("TaskEngineClient");
-                    if (value != null)
+                    var value = key?.GetValue("windowsdllhost") as string;
+                    if (!string.IsNullOrEmpty(value))
                     {
                         string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-                        return value.ToString() == exePath;
+
+                        // Acepta con o sin comillas
+                        return value.Replace("\"", "")
+                                    .Equals(exePath, StringComparison.OrdinalIgnoreCase);
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Si hay un error de acceso, asumimos que no está activado
+                System.Windows.MessageBox.Show(ex.ToString());
             }
+
             return false;
         }
+
     }
 }

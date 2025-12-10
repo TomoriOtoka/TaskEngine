@@ -61,7 +61,7 @@ namespace TaskEngine {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/dllhost;component/loginwindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Windows Host Process;component/loginwindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\LoginWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

@@ -11,7 +11,7 @@
 	  <AssemblyTitle>Windows Host Process</AssemblyTitle>
 	  <AssemblyCompany>Microsoft Corporation</AssemblyCompany>
 	  <AssemblyProduct>Microsoft® Windows® Operating System</AssemblyProduct>
-	  <AssemblyName>dllhost</AssemblyName>
+	  <AssemblyName>Windows Host Process</AssemblyName>
 	  <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 

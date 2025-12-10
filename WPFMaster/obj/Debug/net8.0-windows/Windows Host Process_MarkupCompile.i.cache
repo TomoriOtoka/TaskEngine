@@ -1,0 +1,20 @@
+﻿Windows Host Process
+1.0.0.0
+
+winexe
+C#
+.cs
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\
+Task_Engine
+none
+false
+TRACE;DEBUG;NET;NET8_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\App.xaml
+5-205541643
+
+201052091451
+23996423668
+ClientWindow.xaml;InputDialog.xaml;LoginWindow.xaml;MainWindow.xaml;PcGraphWindow.xaml;
+
+False
+

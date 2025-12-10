@@ -4097,7 +4097,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
-      "projectName": "dllhost",
+      "projectName": "Windows Host Process",
       "projectPath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
       "packagesPath": "C:\\Users\\VICTUS\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\obj\\",
@@ -4205,7 +4205,7 @@
       "code": "NU1603",
       "level": "Warning",
       "warningLevel": 1,
-      "message": "dllhost depende de WPF.UI (>= 3.0.5.7), pero no se encontró WPF.UI 3.0.5.7. WPF.UI 3.1.0 se resolvió en su lugar.",
+      "message": "Windows Host Process depende de WPF.UI (>= 3.0.5.7), pero no se encontró WPF.UI 3.0.5.7. WPF.UI 3.1.0 se resolvió en su lugar.",
       "libraryId": "WPF.UI",
       "targetGraphs": [
         "net8.0-windows7.0"

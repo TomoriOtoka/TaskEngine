@@ -94,7 +94,7 @@ namespace TaskEngine {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/dllhost;component/pcgraphwindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/Windows Host Process;component/pcgraphwindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\PcGraphWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

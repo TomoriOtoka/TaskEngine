@@ -8,7 +8,7 @@
       "version": "1.0.0",
       "restore": {
         "projectUniqueName": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
-        "projectName": "dllhost",
+        "projectName": "Windows Host Process",
         "projectPath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\Task Engine.csproj",
         "packagesPath": "C:\\Users\\VICTUS\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\VICTUS\\Desktop\\DiaInformatica\\Master\\WPFMaster\\WPFMaster\\obj\\",

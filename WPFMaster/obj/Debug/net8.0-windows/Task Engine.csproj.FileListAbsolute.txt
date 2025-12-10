@@ -109,14 +109,14 @@ C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\runtimes\win\lib\net8.0\System.Threading.AccessControl.dll
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Eng.7B80DE56.Up2Date
 C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Task Engine.genruntimeconfig.cache
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.exe
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.deps.json
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.runtimeconfig.json
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\dllhost.pdb
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost_MarkupCompile.cache
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost.g.resources
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\refint\dllhost.dll
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\dllhost.pdb
-C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ref\dllhost.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Windows Host Process.exe
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Windows Host Process.deps.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Windows Host Process.runtimeconfig.json
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Windows Host Process.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\bin\Debug\net8.0-windows\Windows Host Process.pdb
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Windows Host Process_MarkupCompile.cache
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Windows Host Process.g.resources
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Windows Host Process.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\refint\Windows Host Process.dll
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\Windows Host Process.pdb
+C:\Users\VICTUS\Desktop\DiaInformatica\Master\WPFMaster\WPFMaster\obj\Debug\net8.0-windows\ref\Windows Host Process.dll
